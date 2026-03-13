@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer dial ring -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,27 A27,27 0 1,1 53.99,27"
+        android:strokeWidth="3"
+        android:strokeColor="#78C6E3" />
+
+    <!-- 12 evenly spaced notches around the dial (every 30 degrees) -->
+    <!-- 0° (top) -->
+    <path android:fillColor="#78C6E3" android:pathData="M53,24h2v6h-2z" />
+    <!-- 30° -->
+    <path android:fillColor="#78C6E3" android:pathData="M66.1,29.2 L67.8,28.2 L68.8,29.9 L67.1,30.9Z" />
+    <!-- 60° -->
+    <path android:fillColor="#78C6E3" android:pathData="M74.8,40.2 L76.5,39.2 L77.5,40.9 L75.8,41.9Z" />
+    <!-- 90° (right) -->
+    <path android:fillColor="#78C6E3" android:pathData="M78,53h6v2h-6z" />
+    <!-- 120° -->
+    <path android:fillColor="#78C6E3" android:pathData="M74.8,66.1 L75.8,64.4 L77.5,65.4 L76.5,67.1Z" />
+    <!-- 150° -->
+    <path android:fillColor="#78C6E3" android:pathData="M66.1,74.8 L67.1,73.1 L68.8,74.1 L67.8,75.8Z" />
+    <!-- 180° (bottom) -->
+    <path android:fillColor="#78C6E3" android:pathData="M53,78h2v6h-2z" />
+    <!-- 210° -->
+    <path android:fillColor="#78C6E3" android:pathData="M39.2,74.8 L40.2,73.1 L41.9,74.1 L40.9,75.8Z" />
+    <!-- 240° -->
+    <path android:fillColor="#78C6E3" android:pathData="M30.2,66.1 L31.2,64.4 L32.9,65.4 L31.9,67.1Z" />
+    <!-- 270° (left) -->
+    <path android:fillColor="#78C6E3" android:pathData="M24,53h6v2h-6z" />
+    <!-- 300° -->
+    <path android:fillColor="#78C6E3" android:pathData="M30.2,40.2 L31.9,39.2 L32.9,40.9 L31.2,41.9Z" />
+    <!-- 330° -->
+    <path android:fillColor="#78C6E3" android:pathData="M39.2,29.2 L40.9,28.2 L41.9,29.9 L40.2,30.9Z" />
+
+    <!-- Barbell bar (horizontal) -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M36,52.5h36v3h-36z" />
+
+    <!-- Left weight plate (rounded rect) -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M34,46 L40,46 A2,2 0 0,1 42,48 L42,60 A2,2 0 0,1 40,62 L34,62 A2,2 0 0,1 32,60 L32,48 A2,2 0 0,1 34,46Z" />
+
+    <!-- Right weight plate (rounded rect) -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M68,46 L74,46 A2,2 0 0,1 76,48 L76,60 A2,2 0 0,1 74,62 L68,62 A2,2 0 0,1 66,60 L66,48 A2,2 0 0,1 68,46Z" />
+
+    <!-- Left bar end cap -->
+    <path
+        android:fillColor="#BDBDBD"
+        android:pathData="M34,51h2v6h-2z" />
+
+    <!-- Right bar end cap -->
+    <path
+        android:fillColor="#BDBDBD"
+        android:pathData="M72,51h2v6h-2z" />
+</vector>
