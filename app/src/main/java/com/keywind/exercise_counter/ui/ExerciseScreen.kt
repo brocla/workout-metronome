@@ -23,7 +23,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.keywind.exercise_counter.ui.theme.PlayGreen
+import com.keywind.exercise_counter.ui.theme.StopRed
 import com.keywind.exercise_counter.viewmodel.ExerciseState
 import com.keywind.exercise_counter.viewmodel.ExerciseViewModel
 
@@ -65,14 +68,14 @@ fun ExerciseScreen(
                 range = 1..99,
                 selectedValue = duration,
                 onValueChange = viewModel::updateDuration,
-                label = "DUR",
+                label = "WORK",
                 enabled = pickersEnabled,
             )
             ScrollWheelPicker(
                 range = 1..30,
                 selectedValue = gap,
                 onValueChange = viewModel::updateGap,
-                label = "GAP",
+                label = "REST",
                 enabled = pickersEnabled,
             )
             ScrollWheelPicker(
@@ -104,7 +107,10 @@ fun ExerciseScreen(
             FilledIconButton(
                 onClick = { if (isRunning) viewModel.pause() else viewModel.play() },
                 modifier = Modifier.size(64.dp),
-                enabled = true,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = PlayGreen,
+                    contentColor = Color.White,
+                ),
             ) {
                 Icon(
                     imageVector = if (isRunning) Icons.Filled.Pause else Icons.Filled.PlayArrow,
@@ -118,8 +124,8 @@ fun ExerciseScreen(
                 onClick = viewModel::reset,
                 modifier = Modifier.size(64.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = StopRed,
+                    contentColor = Color.White,
                 ),
                 enabled = state != ExerciseState.IDLE,
             ) {

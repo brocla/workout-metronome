@@ -34,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.keywind.exercise_counter.ui.theme.WheelBorder
+import com.keywind.exercise_counter.ui.theme.WheelSurface
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val VISIBLE_ITEMS = 5
@@ -81,7 +83,7 @@ fun ScrollWheelPicker(
         }
     }
 
-    val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+    val wheelSurface = WheelSurface
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
 
     Column(
@@ -91,9 +93,9 @@ fun ScrollWheelPicker(
         // Inset container with sharp corners
         Surface(
             shape = RectangleShape,
-            color = Color.Transparent,
-            tonalElevation = 2.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            color = wheelSurface,
+            tonalElevation = 0.dp,
+            border = BorderStroke(1.dp, WheelBorder),
         ) {
             Box(
                 contentAlignment = Alignment.Center,
@@ -177,7 +179,7 @@ fun ScrollWheelPicker(
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(surfaceVariant, Color.Transparent),
+                                colors = listOf(wheelSurface, Color.Transparent),
                             ),
                         ),
                 )
@@ -190,7 +192,7 @@ fun ScrollWheelPicker(
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, surfaceVariant),
+                                colors = listOf(Color.Transparent, wheelSurface),
                             ),
                         ),
                 )
