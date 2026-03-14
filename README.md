@@ -2,6 +2,10 @@
 
 An Android app that counts timed exercise sets for you. Configure your workout, press play, and the app handles the timing -- a metronome ticks during each set, a voice announces completed sets, and rest gaps are timed automatically.
 
+<p align="center">
+  <img src="screenshot.png" alt="Exercise Counter screenshot" width="270">
+</p>
+
 ## How It Works
 
 Set four values using the scroll wheel pickers:
