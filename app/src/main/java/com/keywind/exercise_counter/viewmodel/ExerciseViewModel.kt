@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 enum class ExerciseState {
     IDLE,
@@ -89,7 +90,7 @@ class ExerciseViewModel(application: Application) : AndroidViewModel(application
             while (set < totalSets && _isRunning.value) {
                 // Exercise phase
                 _state.value = ExerciseState.EXERCISING
-                metronome.start(beatSec)
+                metronome.start(beatSec.seconds)
                 delay(durationSec * 1000L)
                 metronome.stop()
 
@@ -114,7 +115,7 @@ class ExerciseViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
-        metronome.stop()
+        metronome.release()
         announcer.shutdown()
     }
 

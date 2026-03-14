@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.keywind.exercise_counter.ui.theme.RoyalBlue
 import com.keywind.exercise_counter.ui.theme.WheelBorder
 import com.keywind.exercise_counter.ui.theme.WheelSurface
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -84,7 +85,6 @@ fun ScrollWheelPicker(
     }
 
     val wheelSurface = WheelSurface
-    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -103,6 +103,17 @@ fun ScrollWheelPicker(
                     .height(itemHeightDp * VISIBLE_ITEMS)
                     .width(76.dp),
             ) {
+                // Selection row highlight (drawn first so text renders on top)
+                Column(modifier = Modifier.align(Alignment.TopStart)) {
+                    Box(modifier = Modifier.height(itemHeightDp * BUFFER_ITEMS))
+                    Box(
+                        modifier = Modifier
+                            .height(itemHeightDp)
+                            .fillMaxWidth()
+                            .background(Color.White.copy(alpha = 0.7f)),
+                    )
+                }
+
                 // The scrollable number list
                 LazyColumn(
                     state = listState,
@@ -120,8 +131,8 @@ fun ScrollWheelPicker(
                         val distanceFromCenter = kotlin.math.abs(index - centerDataIndex)
                         val alpha = when (distanceFromCenter) {
                             0 -> 1f
-                            1 -> 0.5f
-                            else -> 0.2f
+                            1 -> 0.7f
+                            else -> 0.35f
                         }
                         val fontSize = if (distanceFromCenter == 0) 28.sp else 20.sp
                         val fontWeight = if (distanceFromCenter == 0) {
@@ -142,7 +153,7 @@ fun ScrollWheelPicker(
                                 fontSize = fontSize,
                                 fontWeight = fontWeight,
                                 textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = RoyalBlue,
                             )
                         }
                     }
@@ -152,26 +163,15 @@ fun ScrollWheelPicker(
                     }
                 }
 
-                // Selection row highlight
-                Column(modifier = Modifier.align(Alignment.TopStart)) {
-                    Box(modifier = Modifier.height(itemHeightDp * BUFFER_ITEMS))
-                    Box(
-                        modifier = Modifier
-                            .height(itemHeightDp)
-                            .fillMaxWidth()
-                            .background(primaryContainer.copy(alpha = 0.3f)),
-                    )
-                }
-
                 // Divider lines
                 Column(modifier = Modifier.align(Alignment.TopStart)) {
                     Box(modifier = Modifier.height(itemHeightDp * BUFFER_ITEMS))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color.Black.copy(alpha = 0.3f))
                     Box(modifier = Modifier.height(itemHeightDp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = Color.Black.copy(alpha = 0.3f))
                 }
 
-                // Top gradient fade (cylinder effect)
+                // Top gradient fade (cylinder effect) — darken edges for 3D depth
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -179,7 +179,10 @@ fun ScrollWheelPicker(
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(wheelSurface, Color.Transparent),
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.45f),
+                                    Color.Transparent,
+                                ),
                             ),
                         ),
                 )
@@ -192,7 +195,10 @@ fun ScrollWheelPicker(
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, wheelSurface),
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.45f),
+                                ),
                             ),
                         ),
                 )
@@ -202,7 +208,7 @@ fun ScrollWheelPicker(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White,
             modifier = Modifier.padding(top = 8.dp),
         )
     }

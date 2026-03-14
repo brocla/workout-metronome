@@ -6,27 +6,31 @@ import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.PI
+import kotlin.math.exp
 import kotlin.math.sin
+import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
 
 class MetronomeEngine {
 
+    private val lock = Any()
     private var audioTrack: AudioTrack? = null
     private var playbackJob: Job? = null
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    @Volatile
-    private var isPlaying = false
-
-    fun start(beatIntervalSeconds: Int) {
+    fun start(beatInterval: Duration) {
         stop()
-        isPlaying = true
 
         playbackJob = scope.launch {
             val tickSamples = generateTick(SAMPLE_RATE)
-            val totalBeatSamples = beatIntervalSeconds * SAMPLE_RATE
+            val beatSeconds = beatInterval.toDouble(DurationUnit.SECONDS)
+            val totalBeatSamples = (beatSeconds * SAMPLE_RATE).toInt()
             val silenceCount = (totalBeatSamples - tickSamples.size).coerceAtLeast(0)
 
             val beatBuffer = ShortArray(tickSamples.size + silenceCount)
@@ -56,36 +60,44 @@ class MetronomeEngine {
                 .setTransferMode(AudioTrack.MODE_STREAM)
                 .build()
 
-            audioTrack = track
+            synchronized(lock) { audioTrack = track }
             track.play()
 
             try {
-                while (isActive && isPlaying) {
+                while (isActive) {
                     track.write(beatBuffer, 0, beatBuffer.size)
                 }
             } finally {
-                try {
-                    track.stop()
-                    track.release()
-                } catch (_: IllegalStateException) {
-                    // Already stopped/released by stop()
+                synchronized(lock) {
+                    try {
+                        track.stop()
+                        track.release()
+                    } catch (_: IllegalStateException) {
+                        // Already stopped/released by stop()
+                    }
+                    audioTrack = null
                 }
-                audioTrack = null
             }
         }
     }
 
     fun stop() {
-        isPlaying = false
         playbackJob?.cancel()
         playbackJob = null
-        try {
-            audioTrack?.stop()
-            audioTrack?.release()
-        } catch (_: IllegalStateException) {
-            // Already stopped or released
+        synchronized(lock) {
+            try {
+                audioTrack?.stop()
+                audioTrack?.release()
+            } catch (_: IllegalStateException) {
+                // Already stopped or released
+            }
+            audioTrack = null
         }
-        audioTrack = null
+    }
+
+    fun release() {
+        stop()
+        scope.cancel()
     }
 
     companion object {
@@ -100,7 +112,17 @@ class MetronomeEngine {
         private const val PARTIAL2_RATIO = 1.4   // Closer partials = woody, not bell-like
         private const val PARTIAL3_RATIO = 2.2   // Lower than metal; reduces ringing
 
-        private val random = java.util.Random(42)
+        // Amplitude mix — strong fundamental, subdued upper partials
+        private const val FUNDAMENTAL_AMP = 0.65
+        private const val PARTIAL2_AMP = 0.25
+        private const val PARTIAL3_AMP = 0.08
+
+        // Decay rates — wood damps faster than metal
+        private const val TONE_DECAY = 145.0
+        private const val NOISE_DECAY = 1800.0
+        private const val NOISE_AMP = 0.25
+
+        private val random = Random(42)
 
         private fun generateTick(sampleRate: Int): ShortArray {
             val partial2Hz = FUNDAMENTAL_HZ * PARTIAL2_RATIO
@@ -110,17 +132,14 @@ class MetronomeEngine {
             for (i in samples.indices) {
                 val t = i.toDouble() / sampleRate
 
-                // Wood damps faster than metal
-                val decay = kotlin.math.exp(-t * 145.0)
+                val decay = exp(-t * TONE_DECAY)
 
-                // Short, dull impact transient (wood stick, not metal)
-                val noiseEnvelope = kotlin.math.exp(-t * 1800.0)
-                val noise = (random.nextDouble() * 2.0 - 1.0) * 0.25 * noiseEnvelope
+                val noiseEnvelope = exp(-t * NOISE_DECAY)
+                val noise = (random.nextDouble() * 2.0 - 1.0) * NOISE_AMP * noiseEnvelope
 
-                // Hollow body resonance: strong fundamental, subdued upper partials
-                val tone = sin(2.0 * PI * FUNDAMENTAL_HZ * t) * 0.65 +
-                    sin(2.0 * PI * partial2Hz * t) * 0.25 +
-                    sin(2.0 * PI * partial3Hz * t) * 0.08
+                val tone = sin(2.0 * PI * FUNDAMENTAL_HZ * t) * FUNDAMENTAL_AMP +
+                    sin(2.0 * PI * partial2Hz * t) * PARTIAL2_AMP +
+                    sin(2.0 * PI * partial3Hz * t) * PARTIAL3_AMP
 
                 val sample = TOCK_AMPLITUDE * decay * (tone + noise)
                 samples[i] = (sample * Short.MAX_VALUE).toInt()
