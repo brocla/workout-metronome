@@ -1,6 +1,7 @@
 package com.keywind.exercise_counter.viewmodel
 
 import android.app.Application
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -45,13 +46,26 @@ class ExerciseViewModel(
         .map { name ->
             ExerciseState.entries.firstOrNull { it.name == name } ?: ExerciseState.IDLE
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, ExerciseState.IDLE)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ExerciseState.IDLE)
 
     val isRunning: StateFlow<Boolean> = state
         .map { it == ExerciseState.EXERCISING || it == ExerciseState.GAP }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    init {
+        // After process death, no coroutine is running — reset active states to IDLE
+        // so the user must deliberately press play to restart.
+        val restored = ExerciseState.entries.firstOrNull { it.name == _stateRaw.value }
+            ?: ExerciseState.IDLE
+        if (restored != ExerciseState.IDLE && restored != ExerciseState.DONE) {
+            savedState[KEY_STATE] = ExerciseState.IDLE.name
+            savedState[KEY_CURRENT_SET] = 0
+            savedState[KEY_REMAINING_MS] = 0L
+        }
+    }
 
     private var exerciseJob: Job? = null
+    private var phaseDeadline = 0L
 
     fun updateSets(value: Int) { savedState[KEY_SETS] = value }
     fun updateDuration(value: Int) { savedState[KEY_DURATION] = value }
@@ -68,11 +82,15 @@ class ExerciseViewModel(
         }
         if (state.value == ExerciseState.IDLE) {
             savedState[KEY_CURRENT_SET] = 0
+            savedState[KEY_REMAINING_MS] = 0L
         }
         startExerciseLoop()
     }
 
     fun pause() {
+        val remaining = (phaseDeadline - SystemClock.elapsedRealtime()).coerceAtLeast(0)
+        savedState[KEY_REMAINING_MS] = remaining
+        savedState[KEY_PAUSED_PHASE] = state.value.name
         setExerciseState(ExerciseState.PAUSED)
         metronome.stop()
         exerciseJob?.cancel()
@@ -83,38 +101,72 @@ class ExerciseViewModel(
         pause()
         setExerciseState(ExerciseState.IDLE)
         savedState[KEY_CURRENT_SET] = 0
+        savedState[KEY_REMAINING_MS] = 0L
+    }
+
+    private suspend fun delayTracked(ms: Long) {
+        phaseDeadline = SystemClock.elapsedRealtime() + ms
+        delay(ms)
     }
 
     private fun startExerciseLoop() {
         exerciseJob?.cancel()
         exerciseJob = viewModelScope.launch {
             val totalSets = sets.value
-            val durationSec = duration.value
-            val gapSec = gap.value
+            val durationMs = duration.value * 1000L
+            val gapMs = gap.value * 1000L
             val beatSec = beat.value
 
             var set = currentSet.value
 
-            while (set < totalSets) {
-                // Exercise phase
+            // When resuming from PAUSED, pick up where we left off
+            val remainingMs = savedState.get<Long>(KEY_REMAINING_MS) ?: 0L
+            val pausedPhase = savedState.get<String>(KEY_PAUSED_PHASE)?.let { name ->
+                ExerciseState.entries.firstOrNull { it.name == name }
+            }
+            savedState[KEY_REMAINING_MS] = 0L
+
+            if (remainingMs > 0 && pausedPhase == ExerciseState.EXERCISING) {
+                // Resume mid-exercise: finish remaining time, then complete the set
                 setExerciseState(ExerciseState.EXERCISING)
                 if (beatSec > 0) metronome.start(beatSec.seconds)
-                delay(durationSec.seconds)
+                delayTracked(remainingMs)
                 if (beatSec > 0) metronome.stop()
 
                 set++
                 savedState[KEY_CURRENT_SET] = set
 
                 if (set >= totalSets) {
-                    // All sets complete
+                    announcer.announce("Done")
+                    setExerciseState(ExerciseState.DONE)
+                    return@launch
+                }
+                announcer.announce("$set")
+                setExerciseState(ExerciseState.GAP)
+                delayTracked(gapMs)
+            } else if (remainingMs > 0 && pausedPhase == ExerciseState.GAP) {
+                // Resume mid-gap: finish remaining gap time
+                setExerciseState(ExerciseState.GAP)
+                delayTracked(remainingMs)
+            }
+
+            // Continue with remaining sets
+            while (set < totalSets) {
+                setExerciseState(ExerciseState.EXERCISING)
+                if (beatSec > 0) metronome.start(beatSec.seconds)
+                delayTracked(durationMs)
+                if (beatSec > 0) metronome.stop()
+
+                set++
+                savedState[KEY_CURRENT_SET] = set
+
+                if (set >= totalSets) {
                     announcer.announce("Done")
                     setExerciseState(ExerciseState.DONE)
                 } else {
                     announcer.announce("$set")
-
-                    // Gap phase
                     setExerciseState(ExerciseState.GAP)
-                    delay(gapSec.seconds)
+                    delayTracked(gapMs)
                 }
             }
         }
@@ -133,6 +185,8 @@ class ExerciseViewModel(
         private const val KEY_BEAT = "beat"
         private const val KEY_CURRENT_SET = "currentSet"
         private const val KEY_STATE = "exerciseState"
+        private const val KEY_REMAINING_MS = "remainingMs"
+        private const val KEY_PAUSED_PHASE = "pausedPhase"
 
         private const val DEFAULT_SETS = 3
         private const val DEFAULT_DURATION = 10

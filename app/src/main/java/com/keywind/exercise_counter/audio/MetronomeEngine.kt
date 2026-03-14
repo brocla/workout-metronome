@@ -18,8 +18,6 @@ import kotlin.time.DurationUnit
 class MetronomeEngine(private val scope: CoroutineScope) {
 
     private val random = Random(42)
-    private val lock = Any()
-    private var audioTrack: AudioTrack? = null
     private var playbackJob: Job? = null
 
     fun start(beatInterval: Duration) {
@@ -58,7 +56,6 @@ class MetronomeEngine(private val scope: CoroutineScope) {
                 .setTransferMode(AudioTrack.MODE_STREAM)
                 .build()
 
-            synchronized(lock) { audioTrack = track }
             track.play()
 
             try {
@@ -66,15 +63,8 @@ class MetronomeEngine(private val scope: CoroutineScope) {
                     track.write(beatBuffer, 0, beatBuffer.size)
                 }
             } finally {
-                synchronized(lock) {
-                    try {
-                        track.stop()
-                        track.release()
-                    } catch (_: IllegalStateException) {
-                        // Already stopped/released by stop()
-                    }
-                    audioTrack = null
-                }
+                track.stop()
+                track.release()
             }
         }
     }
@@ -82,15 +72,6 @@ class MetronomeEngine(private val scope: CoroutineScope) {
     fun stop() {
         playbackJob?.cancel()
         playbackJob = null
-        synchronized(lock) {
-            try {
-                audioTrack?.stop()
-                audioTrack?.release()
-            } catch (_: IllegalStateException) {
-                // Already stopped or released
-            }
-            audioTrack = null
-        }
     }
 
     private fun generateTick(sampleRate: Int): ShortArray {

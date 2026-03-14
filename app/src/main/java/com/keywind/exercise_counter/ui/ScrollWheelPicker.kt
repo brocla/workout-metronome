@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.RectangleShape
@@ -41,8 +41,7 @@ import com.keywind.exercise_counter.ui.theme.WheelSurface
 import kotlin.math.abs
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-private const val VISIBLE_ITEMS = 5
-private const val BUFFER_ITEMS = VISIBLE_ITEMS / 2
+private const val DEFAULT_VISIBLE_ITEMS = 5
 
 @Composable
 fun ScrollWheelPicker(
@@ -52,7 +51,9 @@ fun ScrollWheelPicker(
     label: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    visibleItems: Int = DEFAULT_VISIBLE_ITEMS,
 ) {
+    val bufferItems = visibleItems / 2
     val items = remember(range) { range.toList() }
     val initialDataIndex = (selectedValue - range.first).coerceIn(0, items.lastIndex)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialDataIndex)
@@ -105,12 +106,12 @@ fun ScrollWheelPicker(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .height(itemHeightDp * VISIBLE_ITEMS)
+                    .height(itemHeightDp * visibleItems)
                     .width(76.dp),
             ) {
                 // Selection row highlight (drawn first so text renders on top)
                 Column(modifier = Modifier.align(Alignment.TopStart)) {
-                    Box(modifier = Modifier.height(itemHeightDp * BUFFER_ITEMS))
+                    Box(modifier = Modifier.height(itemHeightDp * bufferItems))
                     Box(
                         modifier = Modifier
                             .height(itemHeightDp)
@@ -126,7 +127,7 @@ fun ScrollWheelPicker(
                     userScrollEnabled = enabled,
                     modifier = Modifier.matchParentSize(),
                 ) {
-                    items(BUFFER_ITEMS) {
+                    items(bufferItems) {
                         Box(modifier = Modifier.height(itemHeightDp))
                     }
 
@@ -161,14 +162,14 @@ fun ScrollWheelPicker(
                         }
                     }
 
-                    items(BUFFER_ITEMS) {
+                    items(bufferItems) {
                         Box(modifier = Modifier.height(itemHeightDp))
                     }
                 }
 
                 // Divider lines
                 Column(modifier = Modifier.align(Alignment.TopStart)) {
-                    Box(modifier = Modifier.height(itemHeightDp * BUFFER_ITEMS))
+                    Box(modifier = Modifier.height(itemHeightDp * bufferItems))
                     HorizontalDivider(color = WheelDivider)
                     Box(modifier = Modifier.height(itemHeightDp))
                     HorizontalDivider(color = WheelDivider)
@@ -178,7 +179,7 @@ fun ScrollWheelPicker(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .height(itemHeightDp * BUFFER_ITEMS)
+                        .height(itemHeightDp * bufferItems)
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(
@@ -194,7 +195,7 @@ fun ScrollWheelPicker(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .height(itemHeightDp * BUFFER_ITEMS)
+                        .height(itemHeightDp * bufferItems)
                         .fillMaxWidth()
                         .background(
                             Brush.verticalGradient(

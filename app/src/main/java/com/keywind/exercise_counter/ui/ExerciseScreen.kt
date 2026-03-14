@@ -1,9 +1,8 @@
 package com.keywind.exercise_counter.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +20,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,106 +36,114 @@ fun ExerciseScreen(
     viewModel: ExerciseViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val sets by viewModel.sets.collectAsState()
-    val duration by viewModel.duration.collectAsState()
-    val gap by viewModel.gap.collectAsState()
-    val beat by viewModel.beat.collectAsState()
-    val currentSet by viewModel.currentSet.collectAsState()
-    val state by viewModel.state.collectAsState()
-    val isRunning by viewModel.isRunning.collectAsState()
+    val sets by viewModel.sets.collectAsStateWithLifecycle()
+    val duration by viewModel.duration.collectAsStateWithLifecycle()
+    val gap by viewModel.gap.collectAsStateWithLifecycle()
+    val beat by viewModel.beat.collectAsStateWithLifecycle()
+    val currentSet by viewModel.currentSet.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val isRunning by viewModel.isRunning.collectAsStateWithLifecycle()
 
     val pickersEnabled = state == ExerciseState.IDLE || state == ExerciseState.DONE
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        // Scroll wheel pickers
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val compact = maxHeight < 400.dp
+        val visibleItems = if (compact) 3 else 5
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            ScrollWheelPicker(
-                range = 1..20,
-                selectedValue = sets,
-                onValueChange = viewModel::updateSets,
-                label = "SETS",
-                enabled = pickersEnabled,
-            )
-            ScrollWheelPicker(
-                range = 1..99,
-                selectedValue = duration,
-                onValueChange = viewModel::updateDuration,
-                label = "WORK",
-                enabled = pickersEnabled,
-            )
-            ScrollWheelPicker(
-                range = 1..30,
-                selectedValue = gap,
-                onValueChange = viewModel::updateGap,
-                label = "REST",
-                enabled = pickersEnabled,
-            )
-            ScrollWheelPicker(
-                range = 0..9,
-                selectedValue = beat,
-                onValueChange = viewModel::updateBeat,
-                label = "BEAT",
-                enabled = pickersEnabled,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Status text
-        Text(
-            text = statusText(state, currentSet, sets),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Control buttons
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Play / Pause
-            FilledIconButton(
-                onClick = { if (isRunning) viewModel.pause() else viewModel.play() },
-                modifier = Modifier.size(64.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = PlayGreen,
-                    contentColor = Color.White,
-                ),
+            // Scroll wheel pickers
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                Icon(
-                    imageVector = if (isRunning) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isRunning) "Pause" else "Play",
-                    modifier = Modifier.size(32.dp),
+                ScrollWheelPicker(
+                    range = 1..20,
+                    selectedValue = sets,
+                    onValueChange = viewModel::updateSets,
+                    label = "SETS",
+                    enabled = pickersEnabled,
+                    visibleItems = visibleItems,
+                )
+                ScrollWheelPicker(
+                    range = 1..99,
+                    selectedValue = duration,
+                    onValueChange = viewModel::updateDuration,
+                    label = "WORK",
+                    enabled = pickersEnabled,
+                    visibleItems = visibleItems,
+                )
+                ScrollWheelPicker(
+                    range = 1..30,
+                    selectedValue = gap,
+                    onValueChange = viewModel::updateGap,
+                    label = "REST",
+                    enabled = pickersEnabled,
+                    visibleItems = visibleItems,
+                )
+                ScrollWheelPicker(
+                    range = 0..9,
+                    selectedValue = beat,
+                    onValueChange = viewModel::updateBeat,
+                    label = "BEAT",
+                    enabled = pickersEnabled,
+                    visibleItems = visibleItems,
                 )
             }
 
-            // Reset
-            FilledIconButton(
-                onClick = viewModel::reset,
-                modifier = Modifier.size(64.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = StopRed,
-                    contentColor = Color.White,
-                ),
-                enabled = state != ExerciseState.IDLE && state != ExerciseState.DONE,
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Status text
+            Text(
+                text = statusText(state, currentSet, sets),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Control buttons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Stop,
-                    contentDescription = "Reset",
-                    modifier = Modifier.size(32.dp),
-                )
+                // Play / Pause
+                FilledIconButton(
+                    onClick = { if (isRunning) viewModel.pause() else viewModel.play() },
+                    modifier = Modifier.size(64.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = PlayGreen,
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = if (isRunning) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isRunning) "Pause" else "Play",
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+
+                // Reset
+                FilledIconButton(
+                    onClick = viewModel::reset,
+                    modifier = Modifier.size(64.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = StopRed,
+                        contentColor = Color.White,
+                    ),
+                    enabled = state != ExerciseState.IDLE && state != ExerciseState.DONE,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Stop,
+                        contentDescription = "Reset",
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
             }
         }
     }
