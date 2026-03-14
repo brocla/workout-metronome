@@ -2,14 +2,16 @@ package com.keywind.exercise_counter.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.keywind.exercise_counter.audio.MetronomeEngine
 import com.keywind.exercise_counter.audio.VoiceAnnouncer
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
@@ -17,55 +19,61 @@ enum class ExerciseState {
     IDLE,
     EXERCISING,
     GAP,
+    PAUSED,
     DONE,
 }
 
-class ExerciseViewModel(application: Application) : AndroidViewModel(application) {
+class ExerciseViewModel(
+    application: Application,
+    private val savedState: SavedStateHandle,
+) : AndroidViewModel(application) {
 
-    private val metronome = MetronomeEngine()
+    private val metronome = MetronomeEngine(viewModelScope)
     private val announcer = VoiceAnnouncer(application)
 
-    private val _sets = MutableStateFlow(DEFAULT_SETS)
-    val sets: StateFlow<Int> = _sets.asStateFlow()
+    val sets: StateFlow<Int> = savedState.getStateFlow(KEY_SETS, DEFAULT_SETS)
+    val duration: StateFlow<Int> = savedState.getStateFlow(KEY_DURATION, DEFAULT_DURATION)
+    val gap: StateFlow<Int> = savedState.getStateFlow(KEY_GAP, DEFAULT_GAP)
+    val beat: StateFlow<Int> = savedState.getStateFlow(KEY_BEAT, DEFAULT_BEAT)
 
-    private val _duration = MutableStateFlow(DEFAULT_DURATION)
-    val duration: StateFlow<Int> = _duration.asStateFlow()
+    val currentSet: StateFlow<Int> = savedState.getStateFlow(KEY_CURRENT_SET, 0)
 
-    private val _gap = MutableStateFlow(DEFAULT_GAP)
-    val gap: StateFlow<Int> = _gap.asStateFlow()
+    private val _stateRaw: StateFlow<String> =
+        savedState.getStateFlow(KEY_STATE, ExerciseState.IDLE.name)
 
-    private val _beat = MutableStateFlow(DEFAULT_BEAT)
-    val beat: StateFlow<Int> = _beat.asStateFlow()
+    val state: StateFlow<ExerciseState> = _stateRaw
+        .map { name ->
+            ExerciseState.entries.firstOrNull { it.name == name } ?: ExerciseState.IDLE
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ExerciseState.IDLE)
 
-    private val _currentSet = MutableStateFlow(0)
-    val currentSet: StateFlow<Int> = _currentSet.asStateFlow()
-
-    private val _state = MutableStateFlow(ExerciseState.IDLE)
-    val state: StateFlow<ExerciseState> = _state.asStateFlow()
-
-    private val _isRunning = MutableStateFlow(false)
-    val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+    val isRunning: StateFlow<Boolean> = state
+        .map { it == ExerciseState.EXERCISING || it == ExerciseState.GAP }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private var exerciseJob: Job? = null
 
-    fun updateSets(value: Int) { _sets.value = value }
-    fun updateDuration(value: Int) { _duration.value = value }
-    fun updateGap(value: Int) { _gap.value = value }
-    fun updateBeat(value: Int) { _beat.value = value }
+    fun updateSets(value: Int) { savedState[KEY_SETS] = value }
+    fun updateDuration(value: Int) { savedState[KEY_DURATION] = value }
+    fun updateGap(value: Int) { savedState[KEY_GAP] = value }
+    fun updateBeat(value: Int) { savedState[KEY_BEAT] = value }
+
+    private fun setExerciseState(newState: ExerciseState) {
+        savedState[KEY_STATE] = newState.name
+    }
 
     fun play() {
-        if (_state.value == ExerciseState.DONE) {
+        if (state.value == ExerciseState.DONE) {
             reset()
         }
-        _isRunning.value = true
-        if (_state.value == ExerciseState.IDLE) {
-            _currentSet.value = 0
+        if (state.value == ExerciseState.IDLE) {
+            savedState[KEY_CURRENT_SET] = 0
         }
         startExerciseLoop()
     }
 
     fun pause() {
-        _isRunning.value = false
+        setExerciseState(ExerciseState.PAUSED)
         metronome.stop()
         exerciseJob?.cancel()
         exerciseJob = null
@@ -73,41 +81,40 @@ class ExerciseViewModel(application: Application) : AndroidViewModel(application
 
     fun reset() {
         pause()
-        _state.value = ExerciseState.IDLE
-        _currentSet.value = 0
+        setExerciseState(ExerciseState.IDLE)
+        savedState[KEY_CURRENT_SET] = 0
     }
 
     private fun startExerciseLoop() {
         exerciseJob?.cancel()
         exerciseJob = viewModelScope.launch {
-            val totalSets = _sets.value
-            val durationSec = _duration.value
-            val gapSec = _gap.value
-            val beatSec = _beat.value
+            val totalSets = sets.value
+            val durationSec = duration.value
+            val gapSec = gap.value
+            val beatSec = beat.value
 
-            var set = _currentSet.value
+            var set = currentSet.value
 
-            while (set < totalSets && _isRunning.value) {
+            while (set < totalSets) {
                 // Exercise phase
-                _state.value = ExerciseState.EXERCISING
-                metronome.start(beatSec.seconds)
-                delay(durationSec * 1000L)
-                metronome.stop()
+                setExerciseState(ExerciseState.EXERCISING)
+                if (beatSec > 0) metronome.start(beatSec.seconds)
+                delay(durationSec.seconds)
+                if (beatSec > 0) metronome.stop()
 
                 set++
-                _currentSet.value = set
+                savedState[KEY_CURRENT_SET] = set
 
                 if (set >= totalSets) {
                     // All sets complete
                     announcer.announce("Done")
-                    _state.value = ExerciseState.DONE
-                    _isRunning.value = false
+                    setExerciseState(ExerciseState.DONE)
                 } else {
                     announcer.announce("$set")
 
                     // Gap phase
-                    _state.value = ExerciseState.GAP
-                    delay(gapSec * 1000L)
+                    setExerciseState(ExerciseState.GAP)
+                    delay(gapSec.seconds)
                 }
             }
         }
@@ -115,14 +122,21 @@ class ExerciseViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
-        metronome.release()
+        pause()
         announcer.shutdown()
     }
 
     companion object {
-        const val DEFAULT_SETS = 3
-        const val DEFAULT_DURATION = 10
-        const val DEFAULT_GAP = 3
-        const val DEFAULT_BEAT = 1
+        private const val KEY_SETS = "sets"
+        private const val KEY_DURATION = "duration"
+        private const val KEY_GAP = "gap"
+        private const val KEY_BEAT = "beat"
+        private const val KEY_CURRENT_SET = "currentSet"
+        private const val KEY_STATE = "exerciseState"
+
+        private const val DEFAULT_SETS = 3
+        private const val DEFAULT_DURATION = 10
+        private const val DEFAULT_GAP = 3
+        private const val DEFAULT_BEAT = 1
     }
 }

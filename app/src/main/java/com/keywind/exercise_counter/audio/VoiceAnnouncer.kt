@@ -2,6 +2,7 @@ package com.keywind.exercise_counter.audio
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import java.util.Locale
 
 class VoiceAnnouncer(context: Context) : TextToSpeech.OnInitListener {
@@ -17,6 +18,8 @@ class VoiceAnnouncer(context: Context) : TextToSpeech.OnInitListener {
             tts.setPitch(0.85f)
             tts.setSpeechRate(0.9f)
             isReady = true
+        } else {
+            Log.w(TAG, "TTS init failed with status $status — voice announcements disabled")
         }
     }
 
@@ -30,5 +33,9 @@ class VoiceAnnouncer(context: Context) : TextToSpeech.OnInitListener {
         tts.stop()
         tts.shutdown()
         isReady = false
+    }
+
+    companion object {
+        private const val TAG = "VoiceAnnouncer"
     }
 }

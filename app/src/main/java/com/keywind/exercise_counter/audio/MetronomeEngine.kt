@@ -6,8 +6,6 @@ import android.media.AudioTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -17,17 +15,17 @@ import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 
-class MetronomeEngine {
+class MetronomeEngine(private val scope: CoroutineScope) {
 
+    private val random = Random(42)
     private val lock = Any()
     private var audioTrack: AudioTrack? = null
     private var playbackJob: Job? = null
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun start(beatInterval: Duration) {
         stop()
 
-        playbackJob = scope.launch {
+        playbackJob = scope.launch(Dispatchers.IO) {
             val tickSamples = generateTick(SAMPLE_RATE)
             val beatSeconds = beatInterval.toDouble(DurationUnit.SECONDS)
             val totalBeatSamples = (beatSeconds * SAMPLE_RATE).toInt()
@@ -95,9 +93,29 @@ class MetronomeEngine {
         }
     }
 
-    fun release() {
-        stop()
-        scope.cancel()
+    private fun generateTick(sampleRate: Int): ShortArray {
+        val partial2Hz = FUNDAMENTAL_HZ * PARTIAL2_RATIO
+        val partial3Hz = FUNDAMENTAL_HZ * PARTIAL3_RATIO
+        val numSamples = (sampleRate * TOCK_DURATION_MS) / 1000
+        val samples = ShortArray(numSamples)
+        for (i in samples.indices) {
+            val t = i.toDouble() / sampleRate
+
+            val decay = exp(-t * TONE_DECAY)
+
+            val noiseEnvelope = exp(-t * NOISE_DECAY)
+            val noise = (random.nextDouble() * 2.0 - 1.0) * NOISE_AMP * noiseEnvelope
+
+            val tone = sin(2.0 * PI * FUNDAMENTAL_HZ * t) * FUNDAMENTAL_AMP +
+                sin(2.0 * PI * partial2Hz * t) * PARTIAL2_AMP +
+                sin(2.0 * PI * partial3Hz * t) * PARTIAL3_AMP
+
+            val sample = TOCK_AMPLITUDE * decay * (tone + noise)
+            samples[i] = (sample * Short.MAX_VALUE).toInt()
+                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
+                .toShort()
+        }
+        return samples
     }
 
     companion object {
@@ -122,31 +140,5 @@ class MetronomeEngine {
         private const val NOISE_DECAY = 1800.0
         private const val NOISE_AMP = 0.25
 
-        private val random = Random(42)
-
-        private fun generateTick(sampleRate: Int): ShortArray {
-            val partial2Hz = FUNDAMENTAL_HZ * PARTIAL2_RATIO
-            val partial3Hz = FUNDAMENTAL_HZ * PARTIAL3_RATIO
-            val numSamples = (sampleRate * TOCK_DURATION_MS) / 1000
-            val samples = ShortArray(numSamples)
-            for (i in samples.indices) {
-                val t = i.toDouble() / sampleRate
-
-                val decay = exp(-t * TONE_DECAY)
-
-                val noiseEnvelope = exp(-t * NOISE_DECAY)
-                val noise = (random.nextDouble() * 2.0 - 1.0) * NOISE_AMP * noiseEnvelope
-
-                val tone = sin(2.0 * PI * FUNDAMENTAL_HZ * t) * FUNDAMENTAL_AMP +
-                    sin(2.0 * PI * partial2Hz * t) * PARTIAL2_AMP +
-                    sin(2.0 * PI * partial3Hz * t) * PARTIAL3_AMP
-
-                val sample = TOCK_AMPLITUDE * decay * (tone + noise)
-                samples[i] = (sample * Short.MAX_VALUE).toInt()
-                    .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
-                    .toShort()
-            }
-            return samples
-        }
     }
 }

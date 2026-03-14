@@ -10,7 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.keywind.exercise_counter.ui.ExerciseScreen
-import com.keywind.exercise_counter.ui.theme.Exercise_CounterTheme
+import com.keywind.exercise_counter.ui.theme.ExerciseCounterTheme
 import com.keywind.exercise_counter.viewmodel.ExerciseViewModel
 
 class MainActivity : ComponentActivity() {
@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Exercise_CounterTheme {
+            ExerciseCounterTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val viewModel: ExerciseViewModel = viewModel()
                     ExerciseScreen(

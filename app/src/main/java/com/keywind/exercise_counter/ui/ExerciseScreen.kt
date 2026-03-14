@@ -2,6 +2,8 @@ package com.keywind.exercise_counter.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,6 +50,7 @@ fun ExerciseScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -79,7 +82,7 @@ fun ExerciseScreen(
                 enabled = pickersEnabled,
             )
             ScrollWheelPicker(
-                range = 1..10,
+                range = 0..9,
                 selectedValue = beat,
                 onValueChange = viewModel::updateBeat,
                 label = "BEAT",
@@ -127,7 +130,7 @@ fun ExerciseScreen(
                     containerColor = StopRed,
                     contentColor = Color.White,
                 ),
-                enabled = state != ExerciseState.IDLE,
+                enabled = state != ExerciseState.IDLE && state != ExerciseState.DONE,
             ) {
                 Icon(
                     imageVector = Icons.Filled.Stop,
@@ -144,5 +147,6 @@ private fun statusText(state: ExerciseState, currentSet: Int, totalSets: Int): S
         ExerciseState.IDLE -> "Ready"
         ExerciseState.EXERCISING -> "Set ${currentSet + 1} of $totalSets"
         ExerciseState.GAP -> "Rest — $currentSet of $totalSets complete"
+        ExerciseState.PAUSED -> "Paused"
         ExerciseState.DONE -> "Done!"
     }

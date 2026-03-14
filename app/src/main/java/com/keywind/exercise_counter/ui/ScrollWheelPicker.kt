@@ -1,12 +1,8 @@
 package com.keywind.exercise_counter.ui
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.animation.core.exponentialDecay
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
-import androidx.compose.foundation.gestures.snapping.snapFlingBehavior
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +18,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -34,35 +32,38 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.keywind.exercise_counter.ui.theme.RoyalBlue
 import com.keywind.exercise_counter.ui.theme.WheelBorder
+import com.keywind.exercise_counter.ui.theme.WheelDivider
+import com.keywind.exercise_counter.ui.theme.WheelGradientEdge
+import com.keywind.exercise_counter.ui.theme.WheelHighlight
+import com.keywind.exercise_counter.ui.theme.WheelNumber
 import com.keywind.exercise_counter.ui.theme.WheelSurface
+import kotlin.math.abs
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private const val VISIBLE_ITEMS = 5
 private const val BUFFER_ITEMS = VISIBLE_ITEMS / 2
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScrollWheelPicker(
     range: IntRange,
     selectedValue: Int,
     onValueChange: (Int) -> Unit,
     label: String,
-    enabled: Boolean = true,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
-    val items = range.toList()
+    val items = remember(range) { range.toList() }
     val initialDataIndex = (selectedValue - range.first).coerceIn(0, items.lastIndex)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialDataIndex)
-    val snappingLayout = remember(listState) { SnapLayoutInfoProvider(listState) }
-    val flingBehavior = snapFlingBehavior(
-        snapLayoutInfoProvider = snappingLayout,
-        decayAnimationSpec = exponentialDecay(frictionMultiplier = 0.5f),
-        snapAnimationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
-    )
+    val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
     val itemHeightDp = 48.dp
 
+    // lastScrolledValue breaks the scroll→callback→scroll feedback loop:
+    // Without it, user scrolls → onValueChange fires → selectedValue changes →
+    // LaunchedEffect(selectedValue) scrolls again → infinite loop.
+    // Both effects update lastScrolledValue so each can detect and ignore
+    // changes that originated from the other.
     val lastScrolledValue = remember { mutableIntStateOf(selectedValue) }
 
     LaunchedEffect(listState) {
@@ -84,7 +85,11 @@ fun ScrollWheelPicker(
         }
     }
 
-    val wheelSurface = WheelSurface
+    val centerDataIndex by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex.coerceIn(0, items.lastIndex)
+        }
+    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,7 +98,7 @@ fun ScrollWheelPicker(
         // Inset container with sharp corners
         Surface(
             shape = RectangleShape,
-            color = wheelSurface,
+            color = WheelSurface,
             tonalElevation = 0.dp,
             border = BorderStroke(1.dp, WheelBorder),
         ) {
@@ -110,7 +115,7 @@ fun ScrollWheelPicker(
                         modifier = Modifier
                             .height(itemHeightDp)
                             .fillMaxWidth()
-                            .background(Color.White.copy(alpha = 0.7f)),
+                            .background(WheelHighlight),
                     )
                 }
 
@@ -126,9 +131,7 @@ fun ScrollWheelPicker(
                     }
 
                     items(items.size) { index ->
-                        val centerDataIndex =
-                            listState.firstVisibleItemIndex.coerceIn(0, items.lastIndex)
-                        val distanceFromCenter = kotlin.math.abs(index - centerDataIndex)
+                        val distanceFromCenter = abs(index - centerDataIndex)
                         val alpha = when (distanceFromCenter) {
                             0 -> 1f
                             1 -> 0.7f
@@ -153,7 +156,7 @@ fun ScrollWheelPicker(
                                 fontSize = fontSize,
                                 fontWeight = fontWeight,
                                 textAlign = TextAlign.Center,
-                                color = RoyalBlue,
+                                color = WheelNumber,
                             )
                         }
                     }
@@ -166,9 +169,9 @@ fun ScrollWheelPicker(
                 // Divider lines
                 Column(modifier = Modifier.align(Alignment.TopStart)) {
                     Box(modifier = Modifier.height(itemHeightDp * BUFFER_ITEMS))
-                    HorizontalDivider(color = Color.Black.copy(alpha = 0.3f))
+                    HorizontalDivider(color = WheelDivider)
                     Box(modifier = Modifier.height(itemHeightDp))
-                    HorizontalDivider(color = Color.Black.copy(alpha = 0.3f))
+                    HorizontalDivider(color = WheelDivider)
                 }
 
                 // Top gradient fade (cylinder effect) — darken edges for 3D depth
@@ -180,7 +183,7 @@ fun ScrollWheelPicker(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color.Black.copy(alpha = 0.45f),
+                                    WheelGradientEdge,
                                     Color.Transparent,
                                 ),
                             ),
@@ -197,7 +200,7 @@ fun ScrollWheelPicker(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    Color.Black.copy(alpha = 0.45f),
+                                    WheelGradientEdge,
                                 ),
                             ),
                         ),
