@@ -148,6 +148,11 @@ class ExerciseViewModel(
                 // Resume mid-gap: finish remaining gap time
                 setExerciseState(ExerciseState.GAP)
                 delayTracked(remainingMs)
+            } else if (set == 0) {
+                // Initial countdown so user can get into position after pressing play
+                announcer.announce("Get set")
+                setExerciseState(ExerciseState.GAP)
+                delayTracked(gapMs)
             }
 
             // Continue with remaining sets
