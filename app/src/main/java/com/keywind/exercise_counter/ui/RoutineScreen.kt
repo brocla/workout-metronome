@@ -1,0 +1,173 @@
+package com.keywind.exercise_counter.ui
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.keywind.exercise_counter.data.Exercise
+import com.keywind.exercise_counter.ui.theme.PlayGreen
+import com.keywind.exercise_counter.viewmodel.RoutineViewModel
+
+@Composable
+fun RoutineScreen(
+    viewModel: RoutineViewModel,
+    onAddExercise: () -> Unit,
+    onEditExercise: (Long) -> Unit,
+    onPlay: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val exercises by viewModel.exercises.collectAsStateWithLifecycle()
+
+    Scaffold(
+        modifier = modifier,
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddExercise) {
+                Icon(Icons.Filled.Add, contentDescription = "Add exercise")
+            }
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+        ) {
+            Text(
+                text = "My Routine",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(16.dp),
+            )
+
+            if (exercises.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Tap + to add an exercise",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    items(exercises, key = { it.id }) { exercise ->
+                        ExerciseListItem(
+                            exercise = exercise,
+                            onToggle = { viewModel.toggleEnabled(exercise) },
+                            onEdit = { onEditExercise(exercise.id) },
+                            onDelete = { viewModel.deleteExercise(exercise) },
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
+
+            // Play button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                FilledIconButton(
+                    onClick = onPlay,
+                    modifier = Modifier.size(64.dp),
+                    enabled = exercises.any { it.enabled },
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = PlayGreen,
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Play routine",
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseListItem(
+    exercise: Exercise,
+    onToggle: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = exercise.enabled,
+            onCheckedChange = { onToggle() },
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
+            Text(
+                text = exercise.name,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = exerciseSummary(exercise),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.Filled.DragHandle,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.padding(horizontal = 8.dp),
+        )
+        IconButton(onClick = onDelete) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = "Delete",
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+private fun exerciseSummary(exercise: Exercise): String =
+    "${exercise.sets} sets / ${exercise.duration}s work / ${exercise.gap}s rest / beat ${exercise.beat}s"
