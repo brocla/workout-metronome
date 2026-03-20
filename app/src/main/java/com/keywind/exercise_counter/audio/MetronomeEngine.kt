@@ -63,7 +63,8 @@ class MetronomeEngine(private val scope: CoroutineScope) {
                     track.write(beatBuffer, 0, beatBuffer.size)
                 }
             } finally {
-                track.stop()
+                track.pause()
+                track.flush()
                 track.release()
             }
         }

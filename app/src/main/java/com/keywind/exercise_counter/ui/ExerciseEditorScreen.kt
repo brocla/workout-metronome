@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.keywind.exercise_counter.ui.theme.PlayGreen
+import com.keywind.exercise_counter.ui.theme.WheelNumber
 import com.keywind.exercise_counter.viewmodel.ExerciseEditorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,9 +48,7 @@ fun ExerciseEditorScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = {
-                    Text(if (viewModel.isEditing) "Edit Exercise" else "New Exercise")
-                },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Cancel")
@@ -79,8 +78,17 @@ fun ExerciseEditorScreen(
                     .fillMaxSize()
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
             ) {
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = if (viewModel.isEditing) "Edit Exercise" else "New Exercise",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = WheelNumber,
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = viewModel::updateName,
@@ -124,6 +132,8 @@ fun ExerciseEditorScreen(
                         visibleItems = visibleItems,
                     )
                 }
+
+                Spacer(modifier = Modifier.weight(3f))
             }
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.keywind.exercise_counter.data.Exercise
 import com.keywind.exercise_counter.ui.theme.PlayGreen
+import com.keywind.exercise_counter.ui.theme.WheelNumber
 import com.keywind.exercise_counter.viewmodel.RoutineViewModel
 
 @Composable
@@ -49,9 +51,32 @@ fun RoutineScreen(
 
     Scaffold(
         modifier = modifier,
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAddExercise) {
-                Icon(Icons.Filled.Add, contentDescription = "Add exercise")
+        bottomBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FilledIconButton(
+                    onClick = onPlay,
+                    modifier = Modifier.size(64.dp),
+                    enabled = exercises.any { it.enabled },
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = PlayGreen,
+                        contentColor = Color.White,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Play routine",
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+                FloatingActionButton(onClick = onAddExercise) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add exercise")
+                }
             }
         },
     ) { innerPadding ->
@@ -94,30 +119,6 @@ fun RoutineScreen(
                     }
                 }
             }
-
-            // Play button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                FilledIconButton(
-                    onClick = onPlay,
-                    modifier = Modifier.size(64.dp),
-                    enabled = exercises.any { it.enabled },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = PlayGreen,
-                        contentColor = Color.White,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Play routine",
-                        modifier = Modifier.size(32.dp),
-                    )
-                }
-            }
         }
     }
 }
@@ -139,6 +140,7 @@ private fun ExerciseListItem(
         Checkbox(
             checked = exercise.enabled,
             onCheckedChange = { onToggle() },
+            colors = CheckboxDefaults.colors(checkedColor = WheelNumber),
         )
         Column(
             modifier = Modifier.weight(1f),

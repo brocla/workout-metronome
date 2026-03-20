@@ -15,9 +15,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.keywind.exercise_counter.ui.ExerciseEditorScreen
+import com.keywind.exercise_counter.ui.PlaybackScreen
 import com.keywind.exercise_counter.ui.RoutineScreen
 import com.keywind.exercise_counter.ui.theme.ExerciseCounterTheme
 import com.keywind.exercise_counter.viewmodel.ExerciseEditorViewModel
+import com.keywind.exercise_counter.viewmodel.PlaybackViewModel
 import com.keywind.exercise_counter.viewmodel.RoutineViewModel
 
 class MainActivity : ComponentActivity() {
@@ -40,7 +42,7 @@ class MainActivity : ComponentActivity() {
                                 viewModel = viewModel,
                                 onAddExercise = { navController.navigate("exercise/new") },
                                 onEditExercise = { id -> navController.navigate("exercise/$id") },
-                                onPlay = { /* Phase 3 */ },
+                                onPlay = { navController.navigate("playback") },
                             )
                         }
                         composable("exercise/new") {
@@ -60,6 +62,13 @@ class MainActivity : ComponentActivity() {
                                 viewModel = viewModel,
                                 onSaveComplete = { navController.popBackStack() },
                                 onCancel = { navController.popBackStack() },
+                            )
+                        }
+                        composable("playback") {
+                            val viewModel: PlaybackViewModel = viewModel()
+                            PlaybackScreen(
+                                viewModel = viewModel,
+                                onBack = { navController.popBackStack() },
                             )
                         }
                     }
