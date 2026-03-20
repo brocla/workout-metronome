@@ -1,5 +1,7 @@
 package com.keywind.exercise_counter.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -26,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +42,8 @@ import com.keywind.exercise_counter.data.Exercise
 import com.keywind.exercise_counter.ui.theme.PlayGreen
 import com.keywind.exercise_counter.ui.theme.WheelNumber
 import com.keywind.exercise_counter.viewmodel.RoutineViewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun RoutineScreen(
@@ -105,16 +111,35 @@ fun RoutineScreen(
                     )
                 }
             } else {
+                val lazyListState = rememberLazyListState()
+                val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+                    viewModel.moveExercise(from.index, to.index)
+                }
+
                 LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier.weight(1f),
                 ) {
                     items(exercises, key = { it.id }) { exercise ->
-                        ExerciseListItem(
-                            exercise = exercise,
-                            onToggle = { viewModel.toggleEnabled(exercise) },
-                            onEdit = { onEditExercise(exercise.id) },
-                            onDelete = { viewModel.deleteExercise(exercise) },
-                        )
+                        ReorderableItem(reorderableLazyListState, key = exercise.id) { isDragging ->
+                            val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
+                            val backgroundColor by animateColorAsState(
+                                if (isDragging) Color(0xFF42A5F5).copy(alpha = 0.25f) else Color.Transparent,
+                            )
+
+                            Surface(
+                                shadowElevation = elevation,
+                                color = backgroundColor,
+                            ) {
+                                ExerciseListItem(
+                                    exercise = exercise,
+                                    onToggle = { viewModel.toggleEnabled(exercise) },
+                                    onEdit = { onEditExercise(exercise.id) },
+                                    onDelete = { viewModel.deleteExercise(exercise) },
+                                    dragModifier = Modifier.draggableHandle(),
+                                )
+                            }
+                        }
                         HorizontalDivider()
                     }
                 }
@@ -129,6 +154,7 @@ private fun ExerciseListItem(
     onToggle: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    dragModifier: Modifier = Modifier,
 ) {
     Row(
         modifier = Modifier
@@ -157,9 +183,9 @@ private fun ExerciseListItem(
         }
         Icon(
             imageVector = Icons.Filled.DragHandle,
-            contentDescription = null,
+            contentDescription = "Reorder",
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = dragModifier.padding(horizontal = 8.dp),
         )
         IconButton(onClick = onDelete) {
             Icon(

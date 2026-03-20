@@ -24,4 +24,14 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     fun toggleEnabled(exercise: Exercise) {
         viewModelScope.launch { dao.update(exercise.copy(enabled = !exercise.enabled)) }
     }
+
+    fun moveExercise(from: Int, to: Int) {
+        val current = exercises.value.toMutableList()
+        current.add(to, current.removeAt(from))
+        viewModelScope.launch {
+            current.forEachIndexed { index, exercise ->
+                dao.updateSortOrder(exercise.id, index)
+            }
+        }
+    }
 }
