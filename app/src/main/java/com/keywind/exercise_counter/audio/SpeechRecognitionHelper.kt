@@ -72,11 +72,11 @@ class SpeechRecognitionHelper(
         override fun onEvent(eventType: Int, params: Bundle?) {}
     }
 
-    fun startListening() {
-        if (listening) return
+    fun startListening(): Boolean {
+        if (listening) return true
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             Log.w(TAG, "Speech recognition not available on this device")
-            return
+            return false
         }
 
         listening = true
@@ -84,6 +84,7 @@ class SpeechRecognitionHelper(
             setRecognitionListener(listener)
             startListening(createIntent())
         }
+        return true
     }
 
     fun stopListening() {

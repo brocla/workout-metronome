@@ -7,7 +7,7 @@ import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import java.util.Locale
 
-class VoiceAnnouncer(context: Context) : TextToSpeech.OnInitListener {
+class VoiceAnnouncer private constructor(context: Context) : TextToSpeech.OnInitListener {
 
     private val tts = TextToSpeech(context.applicationContext, this)
     private val ready = CompletableDeferred<Boolean>()
@@ -42,12 +42,19 @@ class VoiceAnnouncer(context: Context) : TextToSpeech.OnInitListener {
         done.await()
     }
 
-    fun shutdown() {
+    fun stop() {
         tts.stop()
-        tts.shutdown()
     }
 
     companion object {
         private const val TAG = "VoiceAnnouncer"
+
+        @Volatile
+        private var instance: VoiceAnnouncer? = null
+
+        fun getInstance(context: Context): VoiceAnnouncer =
+            instance ?: synchronized(this) {
+                instance ?: VoiceAnnouncer(context).also { instance = it }
+            }
     }
 }

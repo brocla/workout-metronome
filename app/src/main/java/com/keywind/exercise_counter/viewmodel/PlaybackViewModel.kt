@@ -40,9 +40,8 @@ class PlaybackViewModel(
 
     private val dao = AppDatabase.getInstance(application).exerciseDao()
     private val metronome = MetronomeEngine(viewModelScope)
-    private val announcer = VoiceAnnouncer(application)
+    private val announcer = VoiceAnnouncer.getInstance(application)
     private val speechHelper = SpeechRecognitionHelper(application, ::onReady)
-    private val voiceAvailable = SpeechRecognizer.isRecognitionAvailable(application)
 
     private var exercises: List<Exercise> = emptyList()
     private var exerciseJob: Job? = null
@@ -119,8 +118,7 @@ class PlaybackViewModel(
     }
 
     fun startVoiceRecognition() {
-        speechHelper.startListening()
-        _isListening.value = true
+        _isListening.value = speechHelper.startListening()
     }
 
     fun stopVoiceRecognition() {
@@ -285,6 +283,7 @@ class PlaybackViewModel(
 
     private fun exerciseAnnouncement(exercise: Exercise): String {
         val setWord = if (exercise.sets == 1) "set" else "sets"
+        val voiceAvailable = SpeechRecognizer.isRecognitionAvailable(getApplication())
         val readyPrompt = if (voiceAvailable) "Say ready." else "Tap ready."
         return "${exercise.name} exercise. ${exercise.sets} $setWord of ${exercise.duration}, " +
             "with ${exercise.gap} second gaps. $readyPrompt"
@@ -293,7 +292,7 @@ class PlaybackViewModel(
     override fun onCleared() {
         super.onCleared()
         metronome.stop()
-        announcer.shutdown()
+        announcer.stop()
         speechHelper.destroy()
         exerciseJob?.cancel()
     }
