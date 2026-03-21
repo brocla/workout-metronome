@@ -32,12 +32,18 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun moveExercise(from: Int, to: Int) {
-        val current = exercises.value.toMutableList()
-        current.add(to, current.removeAt(from))
+        val reordered = reorderExercises(exercises.value, from, to)
         viewModelScope.launch {
-            current.forEachIndexed { index, exercise ->
+            reordered.forEachIndexed { index, exercise ->
                 dao.updateSortOrder(exercise.id, index)
             }
         }
     }
+}
+
+/** Returns a new list with the item at [from] moved to [to]. Both indices must be in-bounds. */
+internal fun reorderExercises(list: List<Exercise>, from: Int, to: Int): List<Exercise> {
+    val mutable = list.toMutableList()
+    mutable.add(to, mutable.removeAt(from))
+    return mutable
 }

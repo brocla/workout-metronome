@@ -239,7 +239,7 @@ class PlaybackViewModel(
 
                 // Wait for ready (unless resuming mid-exercise)
                 if (set == 0 && pausedPhase != PlaybackState.WAITING_FOR_READY) {
-                    announcer.announce(exerciseAnnouncement(exercise))
+                    announcer.announce(exerciseAnnouncement(exercise, SpeechRecognizer.isRecognitionAvailable(getApplication())))
                     setState(PlaybackState.WAITING_FOR_READY)
                     readyDeferred = CompletableDeferred()
                     readyDeferred?.await()
@@ -281,9 +281,8 @@ class PlaybackViewModel(
         }
     }
 
-    private fun exerciseAnnouncement(exercise: Exercise): String {
+    internal fun exerciseAnnouncement(exercise: Exercise, voiceAvailable: Boolean): String {
         val setWord = if (exercise.sets == 1) "set" else "sets"
-        val voiceAvailable = SpeechRecognizer.isRecognitionAvailable(getApplication())
         val readyPrompt = if (voiceAvailable) "Say ready." else "Tap ready."
         return "${exercise.name} exercise. ${exercise.sets} $setWord of ${exercise.duration}, " +
             "with ${exercise.gap} second gaps. $readyPrompt"
@@ -304,5 +303,16 @@ class PlaybackViewModel(
         private const val KEY_TOTAL_EXERCISES = "totalExercises"
         private const val KEY_REMAINING_MS = "remainingMs"
         private const val KEY_PAUSED_PHASE = "pausedPhase"
+
+        /**
+         * Maps a serialized [PlaybackState] name to the state that should be active after process death.
+         * Any active state (EXERCISING, GAP, PAUSED, WAITING_FOR_READY) resets to IDLE because the
+         * exercise list cannot be restored after process death. IDLE and DONE are preserved.
+         * Unknown strings fall back to IDLE.
+         */
+        internal fun recoverState(serialized: String): PlaybackState {
+            val state = PlaybackState.entries.firstOrNull { it.name == serialized } ?: PlaybackState.IDLE
+            return if (state == PlaybackState.IDLE || state == PlaybackState.DONE) state else PlaybackState.IDLE
+        }
     }
 }

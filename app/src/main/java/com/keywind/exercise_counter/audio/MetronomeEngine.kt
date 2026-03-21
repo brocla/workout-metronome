@@ -75,7 +75,7 @@ class MetronomeEngine(private val scope: CoroutineScope) {
         playbackJob = null
     }
 
-    private fun generateTick(sampleRate: Int): ShortArray {
+    internal fun generateTick(sampleRate: Int): ShortArray {
         val partial2Hz = FUNDAMENTAL_HZ * PARTIAL2_RATIO
         val partial3Hz = FUNDAMENTAL_HZ * PARTIAL3_RATIO
         val numSamples = (sampleRate * TOCK_DURATION_MS) / 1000

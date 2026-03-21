@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -96,9 +98,11 @@ fun PlaybackScreen(
         return
     }
 
+    Surface(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -230,9 +234,10 @@ fun PlaybackScreen(
             }
         }
     }
+    }
 }
 
-private fun statusText(state: PlaybackState, currentSet: Int, totalSets: Int): String =
+internal fun statusText(state: PlaybackState, currentSet: Int, totalSets: Int): String =
     when (state) {
         PlaybackState.IDLE -> ""
         PlaybackState.WAITING_FOR_READY -> ""

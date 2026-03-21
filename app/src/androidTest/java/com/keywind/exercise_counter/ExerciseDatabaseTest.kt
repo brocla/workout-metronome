@@ -95,4 +95,36 @@ class ExerciseDatabaseTest {
         val loaded = dao.getById(id)
         assertEquals(5, loaded?.sortOrder)
     }
+
+    // Test #8: getNextSortOrder
+
+    @Test
+    fun getNextSortOrderReturnsZeroOnEmptyTable() = runTest {
+        // To demonstrate failure: change COALESCE default from -1 to 0 → returns 1 instead of 0.
+        assertEquals(0, dao.getNextSortOrder())
+    }
+
+    @Test
+    fun getNextSortOrderReturnsOneAfterSingleInsert() = runTest {
+        dao.insert(Exercise(name = "A", sets = 1, duration = 10, gap = 3, beat = 1, sortOrder = 0))
+        assertEquals(1, dao.getNextSortOrder())
+    }
+
+    @Test
+    fun getNextSortOrderReturnsMaxPlusOne() = runTest {
+        // To demonstrate failure: change MAX(sortOrder) to MIN(sortOrder) → returns 1 instead of 6.
+        dao.insert(Exercise(name = "A", sets = 1, duration = 10, gap = 3, beat = 1, sortOrder = 2))
+        dao.insert(Exercise(name = "B", sets = 1, duration = 10, gap = 3, beat = 1, sortOrder = 5))
+        dao.insert(Exercise(name = "C", sets = 1, duration = 10, gap = 3, beat = 1, sortOrder = 1))
+        assertEquals(6, dao.getNextSortOrder())
+    }
+
+    @Test
+    fun getNextSortOrderAfterDeleteRecomputesFromRemaining() = runTest {
+        val id1 = dao.insert(Exercise(name = "A", sets = 1, duration = 10, gap = 3, beat = 1, sortOrder = 0))
+        val id2 = dao.insert(Exercise(name = "B", sets = 1, duration = 10, gap = 3, beat = 1, sortOrder = 3))
+        dao.delete(dao.getById(id2)!!)
+        // Only sortOrder 0 remains; next should be 1
+        assertEquals(1, dao.getNextSortOrder())
+    }
 }

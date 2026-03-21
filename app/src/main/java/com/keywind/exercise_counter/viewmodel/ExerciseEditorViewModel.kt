@@ -81,6 +81,13 @@ class ExerciseEditorViewModel(
     }
 
     companion object {
+        /**
+         * Returns the trimmed name if non-blank, or null if the name should be rejected.
+         * Mirrors the validation gate in [save].
+         */
+        internal fun validateAndTrimName(name: String): String? =
+            name.trim().takeIf { it.isNotBlank() }
+
         private const val KEY_NAME = "name"
         private const val KEY_SETS = "sets"
         private const val KEY_DURATION = "duration"

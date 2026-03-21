@@ -22,16 +22,16 @@ class SpeechRecognitionHelper(
                 ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 .orEmpty()
 
-            val triggered = matches.any { result ->
-                GO_WORDS.any { word -> result.contains(word, ignoreCase = true) }
-            }
-
-            if (triggered) {
+            if (containsGoWord(matches)) {
                 Log.d(TAG, "Go-word detected: $matches")
                 onReady()
             } else {
                 Log.d(TAG, "No go-word in: $matches")
-                restartListening()
+                // The session ended naturally — reuse the same recognizer instance.
+                // Do NOT call cancel() here; calling it on a completed session triggers
+                // ERROR_RECOGNIZER_BUSY on many OEMs, which destroys the new session
+                // before it starts and leaves nothing listening.
+                if (listening) recognizer?.startListening(createIntent())
             }
         }
 
@@ -61,10 +61,7 @@ class SpeechRecognitionHelper(
             val matches = partialResults
                 ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 .orEmpty()
-            val triggered = matches.any { result ->
-                GO_WORDS.any { word -> result.contains(word, ignoreCase = true) }
-            }
-            if (triggered) {
+            if (containsGoWord(matches)) {
                 Log.d(TAG, "Go-word detected in partial: $matches")
                 onReady()
             }
@@ -119,6 +116,10 @@ class SpeechRecognitionHelper(
         private const val TAG = "SpeechRecognition"
         // ERROR_SERVER_DISCONNECTED added in API 31, value = 11
         private const val ERROR_SERVER_DISCONNECTED = 11
-        private val GO_WORDS = listOf("ready", "go", "next", "okay", "ok")
+        internal val GO_WORDS = listOf("ready", "go", "next", "okay", "ok", "when")
+
+        /** Returns true if any result contains a go-word (case-insensitive substring match). */
+        internal fun containsGoWord(results: List<String>): Boolean =
+            results.any { result -> GO_WORDS.any { word -> result.contains(word, ignoreCase = true) } }
     }
 }

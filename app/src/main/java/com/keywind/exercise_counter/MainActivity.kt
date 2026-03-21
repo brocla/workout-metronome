@@ -5,8 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -30,47 +28,45 @@ class MainActivity : ComponentActivity() {
             ExerciseCounterTheme {
                 val navController = rememberNavController()
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = "routine",
-                        modifier = Modifier.padding(innerPadding),
+                NavHost(
+                    navController = navController,
+                    startDestination = "routine",
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    composable("routine") {
+                        val viewModel: RoutineViewModel = viewModel()
+                        RoutineScreen(
+                            viewModel = viewModel,
+                            onAddExercise = { navController.navigate("exercise/new") },
+                            onEditExercise = { id -> navController.navigate("exercise/$id") },
+                            onPlay = { navController.navigate("playback") },
+                        )
+                    }
+                    composable("exercise/new") {
+                        val viewModel: ExerciseEditorViewModel = viewModel()
+                        ExerciseEditorScreen(
+                            viewModel = viewModel,
+                            onSaveComplete = { navController.popBackStack() },
+                            onCancel = { navController.popBackStack() },
+                        )
+                    }
+                    composable(
+                        route = "exercise/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.LongType }),
                     ) {
-                        composable("routine") {
-                            val viewModel: RoutineViewModel = viewModel()
-                            RoutineScreen(
-                                viewModel = viewModel,
-                                onAddExercise = { navController.navigate("exercise/new") },
-                                onEditExercise = { id -> navController.navigate("exercise/$id") },
-                                onPlay = { navController.navigate("playback") },
-                            )
-                        }
-                        composable("exercise/new") {
-                            val viewModel: ExerciseEditorViewModel = viewModel()
-                            ExerciseEditorScreen(
-                                viewModel = viewModel,
-                                onSaveComplete = { navController.popBackStack() },
-                                onCancel = { navController.popBackStack() },
-                            )
-                        }
-                        composable(
-                            route = "exercise/{id}",
-                            arguments = listOf(navArgument("id") { type = NavType.LongType }),
-                        ) {
-                            val viewModel: ExerciseEditorViewModel = viewModel()
-                            ExerciseEditorScreen(
-                                viewModel = viewModel,
-                                onSaveComplete = { navController.popBackStack() },
-                                onCancel = { navController.popBackStack() },
-                            )
-                        }
-                        composable("playback") {
-                            val viewModel: PlaybackViewModel = viewModel()
-                            PlaybackScreen(
-                                viewModel = viewModel,
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
+                        val viewModel: ExerciseEditorViewModel = viewModel()
+                        ExerciseEditorScreen(
+                            viewModel = viewModel,
+                            onSaveComplete = { navController.popBackStack() },
+                            onCancel = { navController.popBackStack() },
+                        )
+                    }
+                    composable("playback") {
+                        val viewModel: PlaybackViewModel = viewModel()
+                        PlaybackScreen(
+                            viewModel = viewModel,
+                            onBack = { navController.popBackStack() },
+                        )
                     }
                 }
             }
