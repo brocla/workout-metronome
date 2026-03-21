@@ -2,10 +2,12 @@ package com.keywind.exercise_counter.viewmodel
 
 import android.app.Application
 import android.os.SystemClock
+import android.speech.SpeechRecognizer
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.keywind.exercise_counter.audio.MetronomeEngine
+import com.keywind.exercise_counter.audio.SpeechRecognitionHelper
 import com.keywind.exercise_counter.audio.VoiceAnnouncer
 import com.keywind.exercise_counter.data.AppDatabase
 import com.keywind.exercise_counter.data.Exercise
@@ -39,6 +41,8 @@ class PlaybackViewModel(
     private val dao = AppDatabase.getInstance(application).exerciseDao()
     private val metronome = MetronomeEngine(viewModelScope)
     private val announcer = VoiceAnnouncer(application)
+    private val speechHelper = SpeechRecognitionHelper(application, ::onReady)
+    private val voiceAvailable = SpeechRecognizer.isRecognitionAvailable(application)
 
     private var exercises: List<Exercise> = emptyList()
     private var exerciseJob: Job? = null
@@ -69,6 +73,9 @@ class PlaybackViewModel(
 
     private val _loaded = MutableStateFlow(false)
     val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+
+    private val _isListening = MutableStateFlow(false)
+    val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
 
     init {
         // After process death, exercises list is empty and can't be restored.
@@ -111,6 +118,16 @@ class PlaybackViewModel(
         readyDeferred?.complete(Unit)
     }
 
+    fun startVoiceRecognition() {
+        speechHelper.startListening()
+        _isListening.value = true
+    }
+
+    fun stopVoiceRecognition() {
+        speechHelper.stopListening()
+        _isListening.value = false
+    }
+
     fun pause() {
         val currentState = state.value
         if (currentState == PlaybackState.WAITING_FOR_READY) {
@@ -127,6 +144,7 @@ class PlaybackViewModel(
         }
         setState(PlaybackState.PAUSED)
         metronome.stop()
+        stopVoiceRecognition()
         exerciseJob?.cancel()
         exerciseJob = null
     }
@@ -140,12 +158,13 @@ class PlaybackViewModel(
         exerciseJob?.cancel()
         exerciseJob = null
         metronome.stop()
+        stopVoiceRecognition()
         readyDeferred?.cancel()
         readyDeferred = null
 
         val nextIndex = currentExerciseIndex.value + 1
         if (nextIndex >= exercises.size) {
-            announcer.announce("Routine complete")
+            viewModelScope.launch { announcer.announce("Routine complete") }
             setState(PlaybackState.DONE)
             return
         }
@@ -159,6 +178,7 @@ class PlaybackViewModel(
         exerciseJob?.cancel()
         exerciseJob = null
         metronome.stop()
+        stopVoiceRecognition()
         readyDeferred?.cancel()
         readyDeferred = null
         setState(PlaybackState.IDLE)
@@ -184,6 +204,7 @@ class PlaybackViewModel(
                 readyDeferred = CompletableDeferred()
                 readyDeferred?.await()
                 readyDeferred = null
+                stopVoiceRecognition()
                 // Fall through to exercise sets
             } else if (remainingMs > 0 && pausedPhase == PlaybackState.EXERCISING) {
                 val exercise = exercises.getOrNull(index) ?: return@launch
@@ -220,11 +241,12 @@ class PlaybackViewModel(
 
                 // Wait for ready (unless resuming mid-exercise)
                 if (set == 0 && pausedPhase != PlaybackState.WAITING_FOR_READY) {
-                    announcer.announce(exercise.name)
+                    announcer.announce(exerciseAnnouncement(exercise))
                     setState(PlaybackState.WAITING_FOR_READY)
                     readyDeferred = CompletableDeferred()
                     readyDeferred?.await()
                     readyDeferred = null
+                    stopVoiceRecognition()
                 }
 
                 // Exercise sets
@@ -261,10 +283,18 @@ class PlaybackViewModel(
         }
     }
 
+    private fun exerciseAnnouncement(exercise: Exercise): String {
+        val setWord = if (exercise.sets == 1) "set" else "sets"
+        val readyPrompt = if (voiceAvailable) "Say ready." else "Tap ready."
+        return "${exercise.name} exercise. ${exercise.sets} $setWord of ${exercise.duration}, " +
+            "with ${exercise.gap} second gaps. $readyPrompt"
+    }
+
     override fun onCleared() {
         super.onCleared()
         metronome.stop()
         announcer.shutdown()
+        speechHelper.destroy()
         exerciseJob?.cancel()
     }
 

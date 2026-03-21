@@ -1,6 +1,11 @@
 package com.keywind.exercise_counter.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,7 +31,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.keywind.exercise_counter.ui.theme.PlayGreen
@@ -45,7 +52,28 @@ fun PlaybackScreen(
     val currentSet by viewModel.currentSet.collectAsStateWithLifecycle()
     val totalExercises by viewModel.totalExercises.collectAsStateWithLifecycle()
     val loaded by viewModel.loaded.collectAsStateWithLifecycle()
+    val isListening by viewModel.isListening.collectAsStateWithLifecycle()
     val exercise = viewModel.currentExercise()
+    val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) viewModel.startVoiceRecognition()
+    }
+
+    LaunchedEffect(state) {
+        if (state == PlaybackState.WAITING_FOR_READY) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.RECORD_AUDIO,
+            ) == PackageManager.PERMISSION_GRANTED
+            if (hasPermission) {
+                viewModel.startVoiceRecognition()
+            } else {
+                permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
+    }
 
     BackHandler {
         viewModel.stop()
@@ -125,6 +153,14 @@ fun PlaybackScreen(
                 )
             }
 
+            if (isListening) {
+                Text(
+                    text = "Listening...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             Spacer(modifier = Modifier.height(32.dp))
         }
 
@@ -199,7 +235,7 @@ fun PlaybackScreen(
 private fun statusText(state: PlaybackState, currentSet: Int, totalSets: Int): String =
     when (state) {
         PlaybackState.IDLE -> ""
-        PlaybackState.WAITING_FOR_READY -> "Tap Ready to begin"
+        PlaybackState.WAITING_FOR_READY -> ""
         PlaybackState.EXERCISING -> "Set ${currentSet + 1} of $totalSets"
         PlaybackState.GAP -> "Rest — $currentSet of $totalSets complete"
         PlaybackState.PAUSED -> "Paused"
