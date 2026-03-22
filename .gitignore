@@ -44,3 +44,4 @@ captures/
 secrets.properties
 
 .lint/
+.claude/
