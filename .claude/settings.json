@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(adb devices:*)"
+      "Bash(adb devices:*)",
+      "Bash(curl -s https://repo1.maven.org/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/maven-metadata.xml)"
     ]
   }
 }
