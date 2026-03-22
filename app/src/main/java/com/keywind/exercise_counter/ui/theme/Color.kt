@@ -12,4 +12,3 @@ val WheelGradientEdge = Color(0x73000000)   // Black @ 45%
 
 // Button colors
 val PlayGreen = Color(0xFF4CAF50)
-val StopRed = Color(0xFFFF1744)

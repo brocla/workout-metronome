@@ -1,5 +1,6 @@
 package com.keywind.exercise_counter.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
@@ -150,6 +151,7 @@ fun RoutineScreen(
     }
 }
 
+@SuppressLint("ModifierParameter") // dragModifier is a secondary modifier for the drag handle only, not the root element
 @Composable
 private fun ExerciseListItem(
     exercise: Exercise,
@@ -199,5 +201,7 @@ private fun ExerciseListItem(
     }
 }
 
-private fun exerciseSummary(exercise: Exercise): String =
-    "${exercise.sets} sets / ${exercise.duration}s work / ${exercise.gap}s rest / beat ${exercise.beat}s"
+internal fun exerciseSummary(exercise: Exercise): String {
+    val setWord = if (exercise.sets == 1) "set" else "sets"
+    return "${exercise.sets} $setWord / ${exercise.duration}s work / ${exercise.gap}s rest / beat ${exercise.beat}s"
+}

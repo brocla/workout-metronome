@@ -125,7 +125,7 @@ fun PlaybackScreen(
         // Exercise summary
         if (exercise != null) {
             Text(
-                text = "${exercise.sets} sets / ${exercise.duration}s work / ${exercise.gap}s rest / beat ${exercise.beat}s",
+                text = "${exercise.sets} ${if (exercise.sets == 1) "set" else "sets"} / ${exercise.duration}s work / ${exercise.gap}s rest / beat ${exercise.beat}s",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

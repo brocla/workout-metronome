@@ -1,8 +1,11 @@
 package com.keywind.exercise_counter
 
+import com.keywind.exercise_counter.data.Exercise
+import com.keywind.exercise_counter.ui.exerciseSummary
 import com.keywind.exercise_counter.ui.statusText
 import com.keywind.exercise_counter.viewmodel.PlaybackState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -53,5 +56,30 @@ class StatusTextTest {
     @Test
     fun testSingleSetExercise() {
         assertEquals("Set 1 of 1", statusText(PlaybackState.EXERCISING, currentSet = 0, totalSets = 1))
+    }
+
+    // exerciseSummary — singular/plural "set"/"sets"
+    //
+    // To demonstrate failure: revert to hardcoded "sets" →
+    // testExerciseSummarySingularSet fails.
+
+    @Test
+    fun testExerciseSummarySingularSet() {
+        val ex = Exercise(name = "Plank", sets = 1, duration = 60, gap = 5, beat = 0)
+        val summary = exerciseSummary(ex)
+        assertTrue("Should say '1 set' not '1 sets': $summary", summary.startsWith("1 set /"))
+    }
+
+    @Test
+    fun testExerciseSummaryPluralSets() {
+        val ex = Exercise(name = "Push-ups", sets = 3, duration = 30, gap = 10, beat = 1)
+        val summary = exerciseSummary(ex)
+        assertTrue("Should say '3 sets': $summary", summary.startsWith("3 sets /"))
+    }
+
+    @Test
+    fun testExerciseSummaryFormat() {
+        val ex = Exercise(name = "Squats", sets = 5, duration = 20, gap = 8, beat = 2)
+        assertEquals("5 sets / 20s work / 8s rest / beat 2s", exerciseSummary(ex))
     }
 }

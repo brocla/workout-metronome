@@ -127,18 +127,19 @@ class PlaybackViewModel(
     }
 
     fun pause() {
-        val currentState = state.value
-        if (currentState == PlaybackState.WAITING_FOR_READY) {
-            savedState[KEY_REMAINING_MS] = 0L
-            savedState[KEY_PAUSED_PHASE] = currentState.name
-            readyDeferred?.cancel()
-            readyDeferred = null
-        } else if (currentState == PlaybackState.EXERCISING || currentState == PlaybackState.GAP) {
-            val remaining = (phaseDeadline - SystemClock.elapsedRealtime()).coerceAtLeast(0)
-            savedState[KEY_REMAINING_MS] = remaining
-            savedState[KEY_PAUSED_PHASE] = currentState.name
-        } else {
-            return
+        when (val currentState = state.value) {
+            PlaybackState.WAITING_FOR_READY -> {
+                savedState[KEY_REMAINING_MS] = 0L
+                savedState[KEY_PAUSED_PHASE] = currentState.name
+                readyDeferred?.cancel()
+                readyDeferred = null
+            }
+            PlaybackState.EXERCISING, PlaybackState.GAP -> {
+                val remaining = (phaseDeadline - SystemClock.elapsedRealtime()).coerceAtLeast(0)
+                savedState[KEY_REMAINING_MS] = remaining
+                savedState[KEY_PAUSED_PHASE] = currentState.name
+            }
+            else -> return
         }
         setState(PlaybackState.PAUSED)
         metronome.stop()
@@ -197,7 +198,7 @@ class PlaybackViewModel(
 
             if (pausedPhase == PlaybackState.WAITING_FOR_READY) {
                 // Resume into waiting for ready
-                val exercise = exercises.getOrNull(index) ?: return@launch
+                exercises.getOrNull(index) ?: return@launch
                 setState(PlaybackState.WAITING_FOR_READY)
                 readyDeferred = CompletableDeferred()
                 readyDeferred?.await()

@@ -41,7 +41,7 @@ class SpeechRecognitionHelper(
                 SpeechRecognizer.ERROR_NO_MATCH,
                 SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
-                ERROR_SERVER_DISCONNECTED,
+                SpeechRecognizer.ERROR_SERVER_DISCONNECTED,
                 -> restartListening()
                 else -> {
                     Log.w(TAG, "Speech recognition fatal error: $error")
@@ -114,8 +114,6 @@ class SpeechRecognitionHelper(
 
     companion object {
         private const val TAG = "SpeechRecognition"
-        // ERROR_SERVER_DISCONNECTED added in API 31, value = 11
-        private const val ERROR_SERVER_DISCONNECTED = 11
         internal val GO_WORDS = listOf("ready", "go", "next", "okay", "ok", "when")
 
         /** Returns true if any result contains a go-word (case-insensitive substring match). */

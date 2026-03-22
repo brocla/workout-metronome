@@ -228,7 +228,6 @@ WheelHighlight    = #B3FFFFFF (center row highlight, 70% white)
 WheelDivider      = #4D000000 (center dividers, 30% black)
 WheelGradientEdge = #73000000 (top/bottom fade, 45% black)
 PlayGreen         = #4CAF50
-StopRed           = #FF1744   (defined; not currently used in active UI)
 ```
 
 ## Key Design Decisions

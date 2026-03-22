@@ -3,7 +3,9 @@
 An Android workout timer that runs a list of exercises back-to-back, keeping the beat with a metronome and announcing progress aloud so you can focus on moving instead of watching a screen.
 
 <p align="center">
-  <img src="screenshot.png" alt="Exercise Counter screenshot" width="270">
+  <img src="docs/images/screenshot_routine.png" alt="Routine screen" width="270">&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/images/screenshot_editor.png" alt="Exercise editor" width="270">&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/images/screenshot_playback.png" alt="Playback screen" width="270">
 </p>
 
 ## What it does

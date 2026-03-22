@@ -9,9 +9,13 @@ Exercise Counter is a multi-screen Android workout timer. The user builds a rout
 ```bash
 ./gradlew assembleDebug      # Build debug APK
 ./gradlew installDebug        # Install on connected device
+./gradlew testDebugUnitTest   # Run JVM unit tests
+./gradlew lintDebug           # Run Android Lint (unused resources, deprecated APIs, Compose conventions)
 ```
 
 minSdk 29 (Android 10). Use a physical device for testing metronome and TTS.
+
+**When to lint:** Run `lintDebug` once before a commit or PR, not after every edit — it takes ~10s and checks things (dependency versions, unused resources) that don't change mid-session. Run `testDebugUnitTest` more freely; it's ~3s.
 
 ## Architecture
 
