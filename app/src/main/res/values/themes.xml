@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.Exercise_Counter" parent="android:Theme.Material.NoActionBar" />
+
+    <style name="Theme.Exercise_Counter.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Exercise_Counter</item>
+    </style>
 </resources>

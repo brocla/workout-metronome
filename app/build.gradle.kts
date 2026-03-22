@@ -6,11 +6,7 @@ plugins {
 
 android {
     namespace = "com.keywind.exercise_counter"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.keywind.exercise_counter"
@@ -38,6 +34,7 @@ android {
     buildFeatures {
         compose = true
     }
+
 }
 
 ksp {
@@ -45,6 +42,7 @@ ksp {
 }
 
 dependencies {
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
