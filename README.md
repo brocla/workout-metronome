@@ -1,4 +1,4 @@
-# Workout Metronome
+# Workout Metronome <img src="app/src/main/res/mipmap-mdpi/ic_launcher.png" alt="App icon" width="32">
 
 An Android workout timer that runs a list of exercises back-to-back, keeping the beat with a metronome and announcing progress aloud so you can focus on moving instead of watching a screen.
 
