@@ -12,6 +12,7 @@ import kotlin.math.PI
 import kotlin.math.exp
 import kotlin.math.sin
 import kotlin.random.Random
+import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 
@@ -19,8 +20,10 @@ class MetronomeEngine(private val scope: CoroutineScope) {
 
     private val random = Random(42)
     private var playbackJob: Job? = null
+    var tickCount: Int = 0
+        internal set
 
-    fun start(beatInterval: Duration) {
+    fun start(beatInterval: Duration, maxTicks: Int = Int.MAX_VALUE) {
         stop()
 
         playbackJob = scope.launch(Dispatchers.IO) {
@@ -59,7 +62,7 @@ class MetronomeEngine(private val scope: CoroutineScope) {
             track.play()
 
             try {
-                while (isActive) {
+                runTickLoop(maxTicks) {
                     track.write(beatBuffer, 0, beatBuffer.size)
                 }
             } finally {
@@ -67,6 +70,14 @@ class MetronomeEngine(private val scope: CoroutineScope) {
                 track.flush()
                 track.release()
             }
+        }
+    }
+
+    internal suspend fun runTickLoop(maxTicks: Int = Int.MAX_VALUE, onTick: suspend () -> Unit) {
+        tickCount = 0
+        while (tickCount < maxTicks && coroutineContext.isActive) {
+            tickCount++
+            onTick()
         }
     }
 

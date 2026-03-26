@@ -208,7 +208,10 @@ class PlaybackViewModel(
             } else if (remainingMs > 0 && pausedPhase == PlaybackState.EXERCISING) {
                 val exercise = exercises.getOrNull(index) ?: return@launch
                 setState(PlaybackState.EXERCISING)
-                if (exercise.beat > 0) metronome.start(exercise.beat.seconds)
+                if (exercise.beat > 0) {
+                    val maxTicks = (remainingMs / (exercise.beat * 1000L)).toInt()
+                    metronome.start(exercise.beat.seconds, maxTicks = maxTicks)
+                }
                 delayTracked(remainingMs)
                 if (exercise.beat > 0) metronome.stop()
 
@@ -251,7 +254,10 @@ class PlaybackViewModel(
                 // Exercise sets
                 while (set < exercise.sets) {
                     setState(PlaybackState.EXERCISING)
-                    if (exercise.beat > 0) metronome.start(exercise.beat.seconds)
+                    if (exercise.beat > 0) {
+                        val maxTicks = exercise.duration / exercise.beat
+                        metronome.start(exercise.beat.seconds, maxTicks = maxTicks)
+                    }
                     delayTracked(exercise.duration * 1000L)
                     if (exercise.beat > 0) metronome.stop()
 
