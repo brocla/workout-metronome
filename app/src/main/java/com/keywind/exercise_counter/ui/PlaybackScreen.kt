@@ -87,14 +87,15 @@ fun PlaybackScreen(
         onDispose { view.keepScreenOn = false }
     }
 
-    // Wait for exercises to load before deciding anything
-    if (!loaded) return
-
     // Navigate back if no exercises (e.g., after process death reset)
-    if (state == PlaybackState.IDLE && totalExercises == 0) {
-        onBack()
-        return
+    LaunchedEffect(loaded, state, totalExercises) {
+        if (loaded && state == PlaybackState.IDLE && totalExercises == 0) {
+            onBack()
+        }
     }
+
+    // Wait for exercises to load before rendering
+    if (!loaded) return
 
     Surface(modifier = modifier.fillMaxSize()) {
     Column(
