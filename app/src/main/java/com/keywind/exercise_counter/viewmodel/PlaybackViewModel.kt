@@ -1,8 +1,11 @@
 package com.keywind.exercise_counter.viewmodel
 
+import android.Manifest
 import android.app.Application
+import android.content.pm.PackageManager
 import android.os.SystemClock
 import android.speech.SpeechRecognizer
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -126,6 +129,13 @@ class PlaybackViewModel(
         _isListening.value = false
     }
 
+    private fun startVoiceRecognitionIfPermitted() {
+        val granted = ContextCompat.checkSelfPermission(
+            getApplication(), Manifest.permission.RECORD_AUDIO,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) startVoiceRecognition()
+    }
+
     fun pause() {
         when (val currentState = state.value) {
             PlaybackState.WAITING_FOR_READY -> {
@@ -216,18 +226,19 @@ class PlaybackViewModel(
                 delayTracked(remainingMs)
                 if (exercise.beat > 0) metronome.stop()
 
-                set++
-                savedState[KEY_CURRENT_SET] = set
+                val completedSet = set + 1
+                set = completedSet
 
-                if (set >= exercise.sets) {
+                if (completedSet >= exercise.sets) {
                     // This exercise is done, move to next
                     index++
                     savedState[KEY_EXERCISE_INDEX] = index
                     set = 0
                     savedState[KEY_CURRENT_SET] = 0
                 } else {
-                    announcer.announce("$set")
                     setState(PlaybackState.GAP)
+                    savedState[KEY_CURRENT_SET] = set
+                    announcer.announce("$completedSet")
                     delayTracked(exercise.gap * 1000L)
                 }
             } else if (remainingMs > 0 && pausedPhase == PlaybackState.GAP) {
@@ -244,8 +255,9 @@ class PlaybackViewModel(
 
                 // Wait for ready (unless resuming mid-exercise)
                 if (set == 0 && pausedPhase != PlaybackState.WAITING_FOR_READY) {
-                    announcer.announce(exerciseAnnouncement(exercise, SpeechRecognizer.isRecognitionAvailable(getApplication())))
                     setState(PlaybackState.WAITING_FOR_READY)
+                    announcer.announce(exerciseAnnouncement(exercise, SpeechRecognizer.isRecognitionAvailable(getApplication())))
+                    startVoiceRecognitionIfPermitted()
                     readyDeferred = CompletableDeferred()
                     readyDeferred?.await()
                     readyDeferred = null
@@ -263,19 +275,21 @@ class PlaybackViewModel(
                     delayTracked(exercise.duration * 1000L)
                     if (exercise.beat > 0) metronome.stop()
 
-                    set++
-                    savedState[KEY_CURRENT_SET] = set
-
-                    val isLastSet = set >= exercise.sets
+                    val completedSet = set + 1
+                    val isLastSet = completedSet >= exercise.sets
                     val isLastExercise = index >= exercises.size - 1
+
+                    set = completedSet
 
                     if (isLastSet && isLastExercise) {
                         announcer.announce("Routine complete")
                     } else if (isLastSet) {
-                        // Exercise done, will announce next exercise name at top of loop
+                        announcer.announce("Done")
+                        delay(DONE_TO_NEXT_DELAY_MS)
                     } else {
-                        announcer.announce("$set")
                         setState(PlaybackState.GAP)
+                        savedState[KEY_CURRENT_SET] = set
+                        announcer.announce("$completedSet")
                         delayTracked(exercise.gap * 1000L)
                     }
                 }
@@ -313,6 +327,7 @@ class PlaybackViewModel(
         private const val KEY_REMAINING_MS = "remainingMs"
         private const val KEY_PAUSED_PHASE = "pausedPhase"
         private const val READY_TO_EXERCISE_DELAY_MS = 1500L
+        private const val DONE_TO_NEXT_DELAY_MS = 1000L
 
         /**
          * Maps a serialized [PlaybackState] name to the state that should be active after process death.

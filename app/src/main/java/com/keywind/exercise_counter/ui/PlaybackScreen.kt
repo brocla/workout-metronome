@@ -69,9 +69,7 @@ fun PlaybackScreen(
             val hasPermission = ContextCompat.checkSelfPermission(
                 context, Manifest.permission.RECORD_AUDIO,
             ) == PackageManager.PERMISSION_GRANTED
-            if (hasPermission) {
-                viewModel.startVoiceRecognition()
-            } else {
+            if (!hasPermission) {
                 permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
@@ -145,6 +143,7 @@ fun PlaybackScreen(
         if (state == PlaybackState.WAITING_FOR_READY) {
             Button(
                 onClick = viewModel::onReady,
+                enabled = isListening,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PlayGreen,
                     contentColor = Color.White,

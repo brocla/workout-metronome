@@ -38,8 +38,12 @@ class SpeechRecognitionHelper(
         override fun onError(error: Int) {
             Log.d(TAG, "Speech recognition error: $error")
             when (error) {
+                // Session ended with no speech — reuse the existing recognizer
+                // to avoid the system beep that comes from destroy + recreate.
                 SpeechRecognizer.ERROR_NO_MATCH,
                 SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+                -> { if (listening) recognizer?.startListening(createIntent()) }
+                // Recognizer in a bad state — full restart required.
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
                 SpeechRecognizer.ERROR_SERVER_DISCONNECTED,
                 -> restartListening()

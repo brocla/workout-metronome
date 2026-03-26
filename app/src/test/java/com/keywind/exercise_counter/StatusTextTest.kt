@@ -38,7 +38,7 @@ class StatusTextTest {
 
     @Test
     fun testGapShowsCompletedSets() {
-        // After completing set 1, currentSet == 1 (the count of completed sets)
+        // During gap after set 1, currentSet == 1 (incremented before the gap)
         assertEquals("Rest — 1 of 3 complete", statusText(PlaybackState.GAP, currentSet = 1, totalSets = 3))
         assertEquals("Rest — 2 of 3 complete", statusText(PlaybackState.GAP, currentSet = 2, totalSets = 3))
     }
