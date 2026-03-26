@@ -185,7 +185,6 @@ class PlaybackViewModel(
         savedState[KEY_EXERCISE_INDEX] = nextIndex
         savedState[KEY_CURRENT_SET] = 0
         savedState[KEY_REMAINING_MS] = 0L
-        savedState[KEY_PAUSED_PHASE] = null as String?
         updateCurrentExercise()
         startPlaybackLoop()
     }
@@ -212,6 +211,7 @@ class PlaybackViewModel(
                 PlaybackState.entries.firstOrNull { it.name == name }
             }
             savedState[KEY_REMAINING_MS] = 0L
+            savedState.remove<String>(KEY_PAUSED_PHASE)
 
             if (pausedPhase == PlaybackState.WAITING_FOR_READY) {
                 // Resume into waiting for ready
