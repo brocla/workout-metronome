@@ -204,6 +204,7 @@ class PlaybackViewModel(
                 readyDeferred?.await()
                 readyDeferred = null
                 stopVoiceRecognition()
+                delay(READY_TO_EXERCISE_DELAY_MS)
                 // Fall through to exercise sets
             } else if (remainingMs > 0 && pausedPhase == PlaybackState.EXERCISING) {
                 val exercise = exercises.getOrNull(index) ?: return@launch
@@ -249,6 +250,7 @@ class PlaybackViewModel(
                     readyDeferred?.await()
                     readyDeferred = null
                     stopVoiceRecognition()
+                    delay(READY_TO_EXERCISE_DELAY_MS)
                 }
 
                 // Exercise sets
@@ -310,6 +312,7 @@ class PlaybackViewModel(
         private const val KEY_TOTAL_EXERCISES = "totalExercises"
         private const val KEY_REMAINING_MS = "remainingMs"
         private const val KEY_PAUSED_PHASE = "pausedPhase"
+        private const val READY_TO_EXERCISE_DELAY_MS = 1500L
 
         /**
          * Maps a serialized [PlaybackState] name to the state that should be active after process death.
