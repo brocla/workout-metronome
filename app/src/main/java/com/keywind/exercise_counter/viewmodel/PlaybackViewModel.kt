@@ -79,6 +79,9 @@ class PlaybackViewModel(
     private val _isListening = MutableStateFlow(false)
     val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
 
+    private val _currentExercise = MutableStateFlow<Exercise?>(null)
+    val currentExercise: StateFlow<Exercise?> = _currentExercise.asStateFlow()
+
     init {
         // After process death, exercises list is empty and can't be restored.
         // Reset to IDLE so user navigates back and taps play again.
@@ -96,6 +99,7 @@ class PlaybackViewModel(
                 if (exercises.isNotEmpty()) {
                     savedState[KEY_EXERCISE_INDEX] = 0
                     savedState[KEY_CURRENT_SET] = 0
+                    updateCurrentExercise()
                     startPlaybackLoop()
                 }
             }
@@ -104,8 +108,9 @@ class PlaybackViewModel(
         }
     }
 
-    fun currentExercise(): Exercise? =
-        exercises.getOrNull(currentExerciseIndex.value)
+    private fun updateCurrentExercise() {
+        _currentExercise.value = exercises.getOrNull(currentExerciseIndex.value)
+    }
 
     private fun setState(newState: PlaybackState) {
         savedState[KEY_STATE] = newState.name
@@ -180,6 +185,8 @@ class PlaybackViewModel(
         savedState[KEY_EXERCISE_INDEX] = nextIndex
         savedState[KEY_CURRENT_SET] = 0
         savedState[KEY_REMAINING_MS] = 0L
+        savedState[KEY_PAUSED_PHASE] = null as String?
+        updateCurrentExercise()
         startPlaybackLoop()
     }
 
@@ -233,6 +240,7 @@ class PlaybackViewModel(
                     // This exercise is done, move to next
                     index++
                     savedState[KEY_EXERCISE_INDEX] = index
+                    updateCurrentExercise()
                     set = 0
                     savedState[KEY_CURRENT_SET] = 0
                 } else {
@@ -252,6 +260,7 @@ class PlaybackViewModel(
             while (index < exercises.size) {
                 val exercise = exercises[index]
                 savedState[KEY_EXERCISE_INDEX] = index
+                updateCurrentExercise()
 
                 // Wait for ready (unless resuming mid-exercise)
                 if (set == 0 && pausedPhase != PlaybackState.WAITING_FOR_READY) {

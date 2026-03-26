@@ -55,7 +55,7 @@ fun PlaybackScreen(
     val totalExercises by viewModel.totalExercises.collectAsStateWithLifecycle()
     val loaded by viewModel.loaded.collectAsStateWithLifecycle()
     val isListening by viewModel.isListening.collectAsStateWithLifecycle()
-    val exercise = viewModel.currentExercise()
+    val exercise by viewModel.currentExercise.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -121,9 +121,9 @@ fun PlaybackScreen(
         )
 
         // Exercise summary
-        if (exercise != null) {
+        exercise?.let { ex ->
             Text(
-                text = "${exercise.sets} ${if (exercise.sets == 1) "set" else "sets"} / ${exercise.duration}s work / ${exercise.gap}s rest / beat ${exercise.beat}s",
+                text = "${ex.sets} ${if (ex.sets == 1) "set" else "sets"} / ${ex.duration}s work / ${ex.gap}s rest / beat ${ex.beat}s",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
