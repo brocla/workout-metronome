@@ -2,6 +2,7 @@ package com.keywind.exercise_counter.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -26,10 +28,14 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -233,6 +239,34 @@ fun PlaybackScreen(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        // Alarm-stream volume slider (controls tock + voice volume independently of music)
+        val audioManager = remember { context.getSystemService(AudioManager::class.java) }
+        val maxVolume = remember { audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM) }
+        var volume by remember {
+            mutableFloatStateOf(audioManager.getStreamVolume(AudioManager.STREAM_ALARM).toFloat())
+        }
+        Text(
+            text = "Tock volume",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Slider(
+            value = volume,
+            onValueChange = { newVolume ->
+                volume = newVolume
+                audioManager.setStreamVolume(
+                    AudioManager.STREAM_ALARM,
+                    newVolume.toInt(),
+                    0,
+                )
+            },
+            valueRange = 0f..maxVolume.toFloat(),
+            steps = maxVolume - 1,
+            modifier = Modifier.width(240.dp),
+        )
     }
     }
 }

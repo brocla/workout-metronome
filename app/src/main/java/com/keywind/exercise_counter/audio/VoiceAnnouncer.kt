@@ -38,7 +38,10 @@ class VoiceAnnouncer private constructor(context: Context) : TextToSpeech.OnInit
                 if (id == utteranceId) done.complete(Unit)
             }
         })
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+        val params = android.os.Bundle().apply {
+            putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, android.media.AudioManager.STREAM_ALARM)
+        }
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
         done.await()
     }
 
