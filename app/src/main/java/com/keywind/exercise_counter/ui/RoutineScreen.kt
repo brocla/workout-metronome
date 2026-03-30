@@ -94,11 +94,23 @@ fun RoutineScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            Text(
-                text = "My Routine",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(16.dp),
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "My Routine",
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+                Text(
+                    text = formatDuration(routineDurationSeconds(exercises)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             if (exercises.isEmpty()) {
                 Box(
@@ -204,4 +216,13 @@ private fun ExerciseListItem(
 internal fun exerciseSummary(exercise: Exercise): String {
     val setWord = if (exercise.sets == 1) "set" else "sets"
     return "${exercise.sets} $setWord / ${exercise.duration}s work / ${exercise.gap}s rest / beat ${exercise.beat}s"
+}
+
+internal fun routineDurationSeconds(exercises: List<Exercise>): Int =
+    exercises.filter { it.enabled }.sumOf { it.sets * (it.duration + it.gap) }
+
+internal fun formatDuration(totalSeconds: Int): String {
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "${minutes}m ${seconds}s"
 }
